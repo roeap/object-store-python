@@ -1,3 +1,7 @@
+use std::fmt;
+use std::future::Future;
+use std::sync::Arc;
+
 use futures::TryStreamExt;
 use object_store::local::LocalFileSystem;
 use object_store::path::{Error as PathError, Path};
@@ -11,10 +15,9 @@ use pyo3::{
     types::PyBytes,
     PyErr,
 };
-use std::fmt;
-use std::future::Future;
-use std::sync::Arc;
 use tokio::runtime::Runtime;
+
+mod builder;
 
 #[derive(Debug)]
 pub enum ObjectStoreError {

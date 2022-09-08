@@ -551,6 +551,7 @@ dependencies = [
  "pyo3",
  "reqwest",
  "tokio",
+ "url",
 ]
 
 [[package]]

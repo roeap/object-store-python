@@ -2,8 +2,7 @@ set dotenv-load := true
 
 # initialize repository
 init:
-    @echo 'install dev dependencies.'
-    poetry install
+    poetry install --no-root
     poetry run pip install --upgrade pip
     just develop
 
@@ -11,17 +10,15 @@ init:
 develop:
     poetry run maturin develop -m object-store/Cargo.toml
 
-# build native packages
-build:
-    @echo 'build and install object-store.'
-    poetry run pip install -e ./object-store/
-
 # run object-store tests
 test-py:
     pytest object-store/
 
+test-rs:
+    cargo test
+
 # run all tests
-test: test-py
+test: test-rs test-py
 
 # serve the documentation
 serve:

@@ -4,26 +4,25 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Robert Pack <robstar.pack@gmail.com>"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-# crates.io dependencies
 futures = "0.3"
 object_store = "0.4"
 pyo3 = { version = "0.17.1", features = [
   "extension-module",
   "abi3",
-  "abi3-py37",
+  "abi3-py38",
 ] }
-# reqwest is pulled in by object store, but not used by python binding itself
-# for binary wheel best practice, statically link openssl
-reqwest = { version = "*", features = ["native-tls-vendored"] }
 tokio = { version = "1.0", features = [
   "macros",
   "rt",
   "rt-multi-thread",
   "sync",
 ] }
+url = "2.3"
+
+# reqwest is pulled in by object store, but not used by python binding itself
+# for binary wheel best practice, statically link openssl
+reqwest = { version = "*", features = ["native-tls-vendored"] }
 
 [lib]
 name = "object_store"
