@@ -1,0 +1,80 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+    args: ["--profile=black"]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        args:
+          - "--line-length=120"
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
+    hooks:
+      - id: prettier
+    types_or:
+      - json
+      - toml
+      - yaml
+      - markdown
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.37.3
+    hooks:
+      - id: pyupgrade
+        exclude: setup.py
+        entry: pyupgrade --py37-plus
+        types:
+          - python
+
+  - repo: https://github.com/python-poetry/poetry
+    rev: "1.2.0"
+    hooks:
+      - id: poetry-check
+
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: pyright
+        args: ["python/"]
+        language: node
+        pass_filenames: false
+        types: [python]
+        additional_dependencies: ["pyright@1.1.270"]
+
+      - id: just
+        name: just
+        language: system
+        entry: just --fmt --unstable --check
+        files: ^justfile$
+        pass_filenames: false
+        types:
+          - file
+
+      - id: rustfmt
+        name: Rust Format
+        language: system
+        entry: bash -c "cargo +stable fmt --all -- --check"
+        files: ^.*\.rs$
+        types:
+          - file
+          - rust

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["maturin>=0.11,<0.14"]
+build-backend = "maturin"
+
+[project]
+name = "object-store"
+requires-python = ">=3.7"
+readme = "README.md"
+keywords = ["arrow", "datafusion", "arrow-flight", "deltalake", "delta"]
+authors = [{ name = "Robert Pack", email = "robstar.pack@gmail.com" }]
+classifier = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "License :: OSI Approved",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python",
+  "Programming Language :: Rust",
+]
+
+[project.urls]
+repository = "https://github.com/roeap/object-store-python"
+
+[tool.isort]
+profile = "black"
+
+[tool.maturin]
+sdist-include = ["Cargo.lock"]
+
+[tool.coverage.report]
+fail_under = 85
+exclude_lines = [
+  "pragma: no cover",
+  "@overload",
+  "except ImportError",
+  "if TYPE_CHECKING:",
+  "from typing_extensions import ",
+]

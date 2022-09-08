@@ -1,0 +1,8 @@
+site_name: Python object stores
+repo_url: https://github.com/roeap/object-store-python
+
+nav:
+  - Home: index.md
+
+theme:
+  name: material
