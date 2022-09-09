@@ -131,7 +131,7 @@ impl AzureConfig {
         }
     }
 
-    /// CHeck all options if a valid builder can be generated, if not, check if configuration
+    /// Check all options if a valid builder can be generated, if not, check if configuration
     /// can be read from the environment.
     pub fn get_builder(
         options: &HashMap<String, String>,

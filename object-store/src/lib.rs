@@ -1,28 +1,25 @@
 mod builder;
+mod filesystem;
 mod prefix;
 mod settings;
+mod utils;
 
 use std::collections::HashMap;
 use std::fmt;
-use std::future::Future;
 use std::sync::Arc;
 
+use crate::filesystem::{ArrowFileSystem, FileSelector};
 use crate::prefix::PrefixObjectStore;
+use crate::utils::{flatten_list_stream, wait_for_future};
 
 use builder::get_storage_backend;
-use futures::TryStreamExt;
 use object_store::path::{Error as PathError, Path};
-use object_store::{
-    DynObjectStore, Error as InnerObjectStoreError, ListResult, ObjectMeta,
-    Result as ObjectStoreResult,
+use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, ObjectMeta};
+use pyo3::exceptions::{
+    PyException, PyFileExistsError, PyFileNotFoundError, PyNotImplementedError,
 };
 use pyo3::prelude::*;
-use pyo3::{
-    exceptions::{PyException, PyFileExistsError, PyFileNotFoundError, PyNotImplementedError},
-    types::PyBytes,
-    PyErr,
-};
-use tokio::runtime::Runtime;
+use pyo3::{types::PyBytes, PyErr};
 
 #[derive(Debug)]
 pub enum ObjectStoreError {
@@ -355,27 +352,6 @@ impl PyObjectStore {
     }
 }
 
-/// Utility to collect rust futures with GIL released
-pub fn wait_for_future<F: Future>(py: Python, f: F) -> F::Output
-where
-    F: Send,
-    F::Output: Send,
-{
-    let rt = Runtime::new().unwrap();
-    py.allow_threads(|| rt.block_on(f))
-}
-
-async fn flatten_list_stream(
-    storage: &DynObjectStore,
-    prefix: Option<&Path>,
-) -> ObjectStoreResult<Vec<ObjectMeta>> {
-    storage
-        .list(prefix)
-        .await?
-        .try_collect::<Vec<ObjectMeta>>()
-        .await
-}
-
 #[pymodule]
 fn _internal(_py: Python, m: &PyModule) -> PyResult<()> {
     // Register the python classes
@@ -383,6 +359,8 @@ fn _internal(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyPath>()?;
     m.add_class::<PyObjectMeta>()?;
     m.add_class::<PyListResult>()?;
+    m.add_class::<ArrowFileSystem>()?;
+    m.add_class::<FileSelector>()?;
 
     Ok(())
 }

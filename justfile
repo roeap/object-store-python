@@ -8,7 +8,7 @@ init:
 
 # build development version of packages
 develop:
-    poetry run maturin develop -m object-store/Cargo.toml
+    poetry run maturin develop -m object-store/Cargo.toml --extras=pyarrow
 
 # run object-store tests
 test-py:

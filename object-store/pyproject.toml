@@ -24,6 +24,9 @@ classifier = [
   "Programming Language :: Rust",
 ]
 
+[project.optional-dependencies]
+pyarrow = ["pyarrow>=7.0"]
+
 [project.urls]
 repository = "https://github.com/roeap/object-store-python"
 

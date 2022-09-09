@@ -43,6 +43,10 @@ def _as_bytes(raw: BytesLike) -> bytes:
 
 
 class ObjectStore:
+    """A uniform API for interacting with object storage services and local files.
+
+    backed by the Rust object_store crate."""
+
     def __init__(self, root: str | PythonPath, options: dict[str, str] | None = None) -> None:
         if isinstance(root, PythonPath):
             root = str(root.absolute())

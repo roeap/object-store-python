@@ -1,4 +1,4 @@
 {
   "editor.formatOnSave": true,
-  "python.formatting.blackArgs": ["--line-length=100"]
+  "python.formatting.blackArgs": ["--line-length=120"]
 }

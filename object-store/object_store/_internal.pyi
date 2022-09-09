@@ -1,8 +1,12 @@
+from typing import Any
+
 class Path:
     def __init__(self, raw: str | list[str]) -> None: ...
     def child(self, part: str) -> Path: ...
 
 class ObjectStore:
+    """A uniform API for interacting with object storage services and local files."""
+
     def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
     def get(self, location: Path) -> bytes:
         """Return the bytes that are stored at the specified location."""
@@ -53,15 +57,83 @@ class ObjectStore:
         """
 
 class ObjectMeta:
+    """The metadata that describes an object."""
+
     @property
-    def size(self) -> int: ...
+    def size(self) -> int:
+        """The size in bytes of the object"""
     @property
-    def location(self) -> Path: ...
+    def location(self) -> Path:
+        """The full path to the object"""
     @property
-    def last_modified(self) -> int: ...
+    def last_modified(self) -> int:
+        """The last modified time"""
 
 class ListResult:
+    """Result of a list call that includes objects and prefixes (directories)"""
+
     @property
-    def common_prefixes(self) -> list[Path]: ...
+    def common_prefixes(self) -> list[Path]:
+        """Prefixes that are common (like directories)"""
     @property
-    def objects(self) -> list[ObjectMeta]: ...
+    def objects(self) -> list[ObjectMeta]:
+        """Object metadata for the listing"""
+
+class ArrowFileSystem:
+    """Native implementation of the pyarrow.FileSystem API backed by object_store crate"""
+
+    def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
+    def copy_file(self, src: str, dst: str) -> None:
+        """Copy a file.
+
+        If the destination exists and is a directory, an error is returned. Otherwise, it is replaced.
+        """
+    def create_dir(self, path: str, *, recursive: bool = True) -> None:
+        """Create a directory and subdirectories.
+
+        This function succeeds if the directory already exists.
+        """
+    def delete_dir(self, path: str) -> None:
+        """Delete a directory and its contents, recursively."""
+    def delete_file(self, path: str) -> None:
+        """Delete a file."""
+    def equals(self, other) -> bool: ...
+    def delete_dir_contents(self, path: str, *, accept_root_dir: bool = False, missing_dir_ok: bool = False) -> None:
+        """Delete a directory's contents, recursively.
+
+        Like delete_dir, but doesn't delete the directory itself.
+        """
+    def get_file_info(self, paths_or_selector) -> Any | list[Any]:
+        """Get info for the given files.
+
+        A non-existing or unreachable file returns a FileStat object and has a FileType of value NotFound.
+        An exception indicates a truly exceptional condition (low-level I/O error, etc.).
+        """
+    def move(self, src: str, dest: str) -> None:
+        """Move / rename a file or directory.
+
+        If the destination exists: - if it is a non-empty directory, an error is returned - otherwise,
+        if it has the same type as the source, it is replaced - otherwise, behavior is
+        unspecified (implementation-dependent).
+        """
+    def normalize_path(self, path: str) -> str:
+        """Normalize filesystem path."""
+
+class FileSelector:
+    """File and directory selector.
+
+    It contains a set of options that describes how to search for files and directories.
+    """
+
+    def __init__(self, base_dir: str, allow_not_found: bool = False, recursive: bool = False) -> None: ...
+    @property
+    def base_dir(self) -> str:
+        """The directory in which to select files."""
+    @property
+    def allow_not_found(self) -> bool:
+        """he behavior if base_dir doesn’t exist in the filesystem.
+        If false, an error is returned. If true, an empty selection is returned.
+        """
+    @property
+    def recursive(self) -> bool:
+        """Whether to recurse into subdirectories."""
