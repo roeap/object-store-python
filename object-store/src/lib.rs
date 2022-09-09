@@ -1,9 +1,16 @@
+mod builder;
+mod prefix;
+mod settings;
+
+use std::collections::HashMap;
 use std::fmt;
 use std::future::Future;
 use std::sync::Arc;
 
+use crate::prefix::PrefixObjectStore;
+
+use builder::get_storage_backend;
 use futures::TryStreamExt;
-use object_store::local::LocalFileSystem;
 use object_store::path::{Error as PathError, Path};
 use object_store::{
     DynObjectStore, Error as InnerObjectStoreError, ListResult, ObjectMeta,
@@ -16,8 +23,6 @@ use pyo3::{
     PyErr,
 };
 use tokio::runtime::Runtime;
-
-mod builder;
 
 #[derive(Debug)]
 pub enum ObjectStoreError {
@@ -223,8 +228,10 @@ impl PyObjectStore {
 #[pymethods]
 impl PyObjectStore {
     #[new]
-    fn new(root: String) -> PyResult<Self> {
-        let store = LocalFileSystem::new_with_prefix(root).map_err(ObjectStoreError::from)?;
+    fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
+        let (root_store, storage_url) =
+            get_storage_backend(root, options).map_err(ObjectStoreError::from)?;
+        let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
         Ok(Self {
             inner: Arc::new(store),
         })

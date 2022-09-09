@@ -1,6 +1,15 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+// use object_store::aws::AmazonS3Builder;
+// use object_store::gcp::GoogleCloudStorageBuilder;
+use object_store::local::LocalFileSystem;
+use object_store::memory::InMemory;
 use object_store::path::Path;
-use object_store::{Error as ObjectStoreError, Result as ObjectStoreResult};
+use object_store::{DynObjectStore, Error as ObjectStoreError, Result as ObjectStoreResult};
 use url::Url;
+
+use crate::settings::AzureConfig;
 
 #[derive(Debug, PartialEq)]
 /// Well known storage services
@@ -165,6 +174,57 @@ impl AsRef<Url> for StorageUrl {
 impl std::fmt::Display for StorageUrl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.as_str().fmt(f)
+    }
+}
+
+pub(crate) fn get_storage_backend(
+    table_uri: impl AsRef<str>,
+    options: Option<HashMap<String, String>>,
+) -> ObjectStoreResult<(Arc<DynObjectStore>, StorageUrl)> {
+    let storage_url = StorageUrl::parse(table_uri)?;
+    match storage_url.service_type() {
+        StorageService::Local => Ok((Arc::new(LocalFileSystem::new()), storage_url)),
+        StorageService::InMemory => Ok((Arc::new(InMemory::new()), storage_url)),
+        StorageService::Azure => {
+            let (container_name, url_account) = match storage_url.scheme() {
+                "az" | "adl" | "azure" => {
+                    let container = storage_url.host().ok_or(ObjectStoreError::NotImplemented)?;
+                    (container.to_owned(), None)
+                }
+                "abfs" | "abfss" => {
+                    // abfs(s) might refer to the fsspec convention abfs://<container>/<path>
+                    // or the convention for the hadoop driver abfs[s]://<file_system>@<account_name>.dfs.core.windows.net/<path>
+                    let url: &Url = storage_url.as_ref();
+                    if url.username().is_empty() {
+                        (
+                            url.host_str()
+                                .ok_or(ObjectStoreError::NotImplemented)?
+                                .to_string(),
+                            None,
+                        )
+                    } else {
+                        let parts: Vec<&str> = url
+                            .host_str()
+                            .ok_or(ObjectStoreError::NotImplemented)?
+                            .splitn(2, '.')
+                            .collect();
+                        if parts.len() != 2 {
+                            Err(ObjectStoreError::NotImplemented)
+                        } else {
+                            Ok((url.username().to_owned(), Some(parts[0])))
+                        }?
+                    }
+                }
+                _ => todo!(),
+            };
+            let mut options = options.unwrap_or_default().clone();
+            if let Some(account) = url_account {
+                options.insert("account_name".into(), account.into());
+            }
+            let builder = AzureConfig::get_builder(&options)?.with_container_name(container_name);
+            Ok((Arc::new(builder.build()?), storage_url))
+        }
+        _ => todo!(),
     }
 }
 

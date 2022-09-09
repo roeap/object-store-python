@@ -43,10 +43,10 @@ def _as_bytes(raw: BytesLike) -> bytes:
 
 
 class ObjectStore:
-    def __init__(self, root: str | PythonPath) -> None:
+    def __init__(self, root: str | PythonPath, options: dict[str, str] | None = None) -> None:
         if isinstance(root, PythonPath):
             root = str(root.absolute())
-        self._store = _RawObjectStore(root)
+        self._store = _RawObjectStore(root, options)
 
     def head(self, location: PathLike) -> ObjectMeta:
         """Return the metadata for the specified location.

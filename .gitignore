@@ -55,3 +55,6 @@ site/
 
 .coverage
 cobertura.xml
+
+__azurite*
+__blobstorage__
