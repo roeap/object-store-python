@@ -31,3 +31,6 @@ include = '\.pyi?$'
 [tool.isort]
 profile = "black"
 known_first_party = ["object_store"]
+
+[tool.bandit]
+exclude_dirs = ["object-store/tests"]

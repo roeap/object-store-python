@@ -55,34 +55,6 @@ class ObjectStore:
 
         Will return an error if the destination already has an object.
         """
-
-class ObjectMeta:
-    """The metadata that describes an object."""
-
-    @property
-    def size(self) -> int:
-        """The size in bytes of the object"""
-    @property
-    def location(self) -> Path:
-        """The full path to the object"""
-    @property
-    def last_modified(self) -> int:
-        """The last modified time"""
-
-class ListResult:
-    """Result of a list call that includes objects and prefixes (directories)"""
-
-    @property
-    def common_prefixes(self) -> list[Path]:
-        """Prefixes that are common (like directories)"""
-    @property
-    def objects(self) -> list[ObjectMeta]:
-        """Object metadata for the listing"""
-
-class ArrowFileSystem:
-    """Native implementation of the pyarrow.FileSystem API backed by object_store crate"""
-
-    def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
     def copy_file(self, src: str, dst: str) -> None:
         """Copy a file.
 
@@ -118,6 +90,29 @@ class ArrowFileSystem:
         """
     def normalize_path(self, path: str) -> str:
         """Normalize filesystem path."""
+
+class ObjectMeta:
+    """The metadata that describes an object."""
+
+    @property
+    def size(self) -> int:
+        """The size in bytes of the object"""
+    @property
+    def location(self) -> Path:
+        """The full path to the object"""
+    @property
+    def last_modified(self) -> int:
+        """The last modified time"""
+
+class ListResult:
+    """Result of a list call that includes objects and prefixes (directories)"""
+
+    @property
+    def common_prefixes(self) -> list[Path]:
+        """Prefixes that are common (like directories)"""
+    @property
+    def objects(self) -> list[ObjectMeta]:
+        """Object metadata for the listing"""
 
 class FileSelector:
     """File and directory selector.

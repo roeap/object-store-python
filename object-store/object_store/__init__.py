@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path as PythonPath
-from typing import List
+from typing import TYPE_CHECKING, List
 
 # NOTE aliasing the imports with 'as' makes them public in the eyes
 # of static code checkers. Thus we avoid listing them with __all__ = ...
+from ._internal import FileSelector as _FileSelector
 from ._internal import ListResult as ListResult
 from ._internal import ObjectMeta as ObjectMeta
-from ._internal import ObjectStore as _RawObjectStore
+from ._internal import ObjectStore as _ObjectStore
 from ._internal import Path as Path
 
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
     import importlib_metadata  # type: ignore
+
+if TYPE_CHECKING:
+    import pyarrow.fs as pa_fs
 
 __version__ = importlib_metadata.version(__name__)
 
@@ -42,15 +46,10 @@ def _as_bytes(raw: BytesLike) -> bytes:
     raise ValueError(f"Cannot convert type '{type(raw)}' to type bytes.")
 
 
-class ObjectStore:
+class ObjectStore(_ObjectStore):
     """A uniform API for interacting with object storage services and local files.
 
     backed by the Rust object_store crate."""
-
-    def __init__(self, root: str | PythonPath, options: dict[str, str] | None = None) -> None:
-        if isinstance(root, PythonPath):
-            root = str(root.absolute())
-        self._store = _RawObjectStore(root, options)
 
     def head(self, location: PathLike) -> ObjectMeta:
         """Return the metadata for the specified location.
@@ -61,7 +60,7 @@ class ObjectStore:
         Returns:
             ObjectMeta: metadata for object at location
         """
-        return self._store.head(_as_path(location))
+        return super().head(_as_path(location))
 
     def get(self, location: PathLike) -> bytes:
         """Return the bytes that are stored at the specified location.
@@ -72,7 +71,7 @@ class ObjectStore:
         Returns:
             bytes: raw data stored in location
         """
-        return self._store.get(_as_path(location))
+        return super().get(_as_path(location))
 
     def get_range(self, location: PathLike, start: int, length: int) -> bytes:
         """Return the bytes that are stored at the specified location in the given byte range.
@@ -85,7 +84,7 @@ class ObjectStore:
         Returns:
             bytes: raw data range stored in location
         """
-        return self._store.get_range(_as_path(location), start, length)
+        return super().get_range(_as_path(location), start, length)
 
     def put(self, location: PathLike, bytes: BytesLike) -> None:
         """Save the provided bytes to the specified location.
@@ -94,7 +93,7 @@ class ObjectStore:
             location (PathLike): path / key to storage location
             bytes (BytesLike): data to be written to location
         """
-        return self._store.put(_as_path(location), _as_bytes(bytes))
+        return super().put(_as_path(location), _as_bytes(bytes))
 
     def delete(self, location: PathLike) -> None:
         """Delete the object at the specified location.
@@ -102,7 +101,7 @@ class ObjectStore:
         Args:
             location (PathLike): path / key to storage location
         """
-        return self._store.delete(_as_path(location))
+        return super().delete(_as_path(location))
 
     def list(self, prefix: PathLike | None = None) -> list[ObjectMeta]:
         """List all the objects with the given prefix.
@@ -117,7 +116,7 @@ class ObjectStore:
             list[ObjectMeta]: ObjectMeta for all objects under the listed path
         """
         prefix_ = _as_path(prefix) if prefix else None
-        return self._store.list(prefix_)
+        return super().list(prefix_)
 
     def list_with_delimiter(self, prefix: PathLike | None = None) -> ListResult:
         """List objects with the given prefix and an implementation specific
@@ -134,7 +133,7 @@ class ObjectStore:
             list[ObjectMeta]: ObjectMeta for all objects under the listed path
         """
         prefix_ = _as_path(prefix) if prefix else None
-        return self._store.list_with_delimiter(prefix_)
+        return super().list_with_delimiter(prefix_)
 
     def copy(self, src: PathLike, dst: PathLike) -> None:
         """Copy an object from one path to another in the same object store.
@@ -145,7 +144,7 @@ class ObjectStore:
             src (PathLike): source path
             dst (PathLike): destination path
         """
-        return self._store.copy(_as_path(src), _as_path(dst))
+        return super().copy(_as_path(src), _as_path(dst))
 
     def copy_if_not_exists(self, src: PathLike, dst: PathLike) -> None:
         """Copy an object from one path to another, only if destination is empty.
@@ -156,7 +155,7 @@ class ObjectStore:
             src (PathLike): source path
             dst (PathLike): destination path
         """
-        return self._store.copy_if_not_exists(_as_path(src), _as_path(dst))
+        return super().copy_if_not_exists(_as_path(src), _as_path(dst))
 
     def rename(self, src: PathLike, dst: PathLike) -> None:
         """Move an object from one path to another in the same object store.
@@ -170,7 +169,7 @@ class ObjectStore:
             src (PathLike): source path
             dst (PathLike): destination path
         """
-        return self._store.rename(_as_path(src), _as_path(dst))
+        return super().rename(_as_path(src), _as_path(dst))
 
     def rename_if_not_exists(self, src: PathLike, dst: PathLike) -> None:
         """Move an object from one path to another in the same object store.
@@ -181,4 +180,22 @@ class ObjectStore:
             src (PathLike): source path
             dst (PathLike): destination path
         """
-        return self._store.rename_if_not_exists(_as_path(src), _as_path(dst))
+        return super().rename_if_not_exists(_as_path(src), _as_path(dst))
+
+    def get_file_info(
+        self, paths_or_selector: str | list[str] | pa_fs.FileSelector
+    ) -> pa_fs.FileInfo | list[pa_fs.FileInfo]:
+        is_list = True
+        selectors = []
+        if isinstance(paths_or_selector, str):
+            selectors = [_FileSelector(paths_or_selector)]
+            is_list = False
+        if isinstance(paths_or_selector, List):
+            selectors = [_FileSelector(path) for path in paths_or_selector]  # type: ignore
+
+        result = super().get_file_info(selectors)
+
+        if is_list:
+            return result
+
+        return result[0]
