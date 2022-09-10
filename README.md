@@ -37,6 +37,10 @@ just test
 
 ### `ObjectStore` api
 
+The `object-store-python` tries to directly exposes the APIs defined on the
+[`ObjectStore`](https://docs.rs/object_store/latest/object_store/trait.ObjectStore.html) trait
+in the underlying rust crate.
+
 ### with `pyarrow`
 
 ```py

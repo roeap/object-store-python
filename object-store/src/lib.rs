@@ -205,8 +205,10 @@ impl From<ListResult> for PyListResult {
     }
 }
 
-#[pyclass(name = "ObjectStore", module = "object_store", subclass)]
+#[pyclass(name = "ObjectStore", module = "object_store._internal", subclass)]
 #[derive(Debug, Clone)]
+/// A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage,
+/// Azure Blob Storage and local files.
 struct PyObjectStore {
     inner: Arc<DynObjectStore>,
 }
@@ -215,6 +217,7 @@ struct PyObjectStore {
 impl PyObjectStore {
     #[new]
     #[args(options = "None")]
+    /// Create a new ObjectStore instance
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
         let (root_store, storage_url) =
             get_storage_backend(root, options).map_err(ObjectStoreError::from)?;
@@ -225,6 +228,7 @@ impl PyObjectStore {
     }
 
     /// Save the provided bytes to the specified location.
+    #[pyo3(text_signature = "($self, location, bytes)")]
     fn put(&self, location: PyPath, bytes: Vec<u8>, py: Python) -> PyResult<()> {
         wait_for_future(py, self.inner.put(&location.into(), bytes.into()))
             .map_err(ObjectStoreError::from)?;
@@ -232,6 +236,7 @@ impl PyObjectStore {
     }
 
     /// Return the bytes that are stored at the specified location.
+    #[pyo3(text_signature = "($self, location)")]
     fn get<'py>(&self, location: PyPath, py: Python<'py>) -> PyResult<&'py PyBytes> {
         let obj = wait_for_future(py, get_bytes(self.inner.as_ref(), &location.into()))
             .map_err(ObjectStoreError::from)?;
@@ -239,6 +244,7 @@ impl PyObjectStore {
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
+    #[pyo3(text_signature = "($self, location, start, length)")]
     fn get_range<'py>(
         &self,
         location: PyPath,
@@ -257,6 +263,7 @@ impl PyObjectStore {
     }
 
     /// Return the metadata for the specified location
+    #[pyo3(text_signature = "($self, location)")]
     fn head(&self, location: PyPath, py: Python) -> PyResult<PyObjectMeta> {
         let meta = wait_for_future(py, self.inner.head(&location.into()))
             .map_err(ObjectStoreError::from)?;
@@ -264,6 +271,7 @@ impl PyObjectStore {
     }
 
     /// Delete the object at the specified location.
+    #[pyo3(text_signature = "($self, location)")]
     fn delete(&self, location: PyPath, py: Python) -> PyResult<()> {
         wait_for_future(py, self.inner.delete(&location.into())).map_err(ObjectStoreError::from)?;
         Ok(())
@@ -273,6 +281,7 @@ impl PyObjectStore {
     ///
     /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
     /// of `foo/bar/x` but not of `foo/bar_baz/x`.
+    #[pyo3(text_signature = "($self, prefix)")]
     fn list(&self, prefix: Option<PyPath>, py: Python) -> PyResult<Vec<PyObjectMeta>> {
         Ok(wait_for_future(
             py,
@@ -290,6 +299,7 @@ impl PyObjectStore {
     ///
     /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
     /// of `foo/bar/x` but not of `foo/bar_baz/x`.
+    #[pyo3(text_signature = "($self, prefix)")]
     fn list_with_delimiter(&self, prefix: Option<PyPath>, py: Python) -> PyResult<PyListResult> {
         let list = wait_for_future(
             py,
@@ -303,6 +313,7 @@ impl PyObjectStore {
     /// Copy an object from one path to another in the same object store.
     ///
     /// If there exists an object at the destination, it will be overwritten.
+    #[pyo3(text_signature = "($self, from, to)")]
     fn copy(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
         wait_for_future(py, self.inner.copy(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
@@ -312,6 +323,7 @@ impl PyObjectStore {
     /// Copy an object from one path to another, only if destination is empty.
     ///
     /// Will return an error if the destination already has an object.
+    #[pyo3(text_signature = "($self, from, to)")]
     fn copy_if_not_exists(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
         wait_for_future(py, self.inner.copy_if_not_exists(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
@@ -324,6 +336,7 @@ impl PyObjectStore {
     /// check when deleting source that it was the same object that was originally copied.
     ///
     /// If there exists an object at the destination, it will be overwritten.
+    #[pyo3(text_signature = "($self, from, to)")]
     fn rename(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
         wait_for_future(py, self.inner.rename(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
@@ -333,6 +346,7 @@ impl PyObjectStore {
     /// Move an object from one path to another in the same object store.
     ///
     /// Will return an error if the destination already has an object.
+    #[pyo3(text_signature = "($self, from, to)")]
     fn rename_if_not_exists(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
         wait_for_future(
             py,

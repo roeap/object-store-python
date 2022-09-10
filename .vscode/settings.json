@@ -1,5 +1,6 @@
 {
   "editor.formatOnSave": true,
   "python.formatting.blackArgs": ["--line-length=120"],
-  "python.linting.banditArgs": ["-c", "pyproject.toml"]
+  "python.linting.banditArgs": ["-c", "pyproject.toml"],
+  "cSpell.ignoreWords": ["duckdb", "pyarrow", "randn"]
 }
