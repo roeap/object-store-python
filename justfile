@@ -4,12 +4,18 @@ set dotenv-load := true
 init:
     poetry install --no-root
     poetry run pip install --upgrade pip
-    pre-commit install
+    poetry run pre-commit install
     just develop
 
 # build development version of packages
 develop:
     poetry run maturin develop -m object-store/Cargo.toml --extras=pyarrow
+
+# run static code analysers
+lint:
+    poetry run bandit -r -c pyproject.toml .
+    poetry run black .
+    poetry run flake8 .
 
 # run object-store python tests
 test-py:

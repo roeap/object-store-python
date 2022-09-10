@@ -1,5 +1,10 @@
 # object-store-python
 
+<p align="center">
+<a href="https://github.com/PyCQA/bandit"><img alt="security: bandit" src="https://img.shields.io/badge/security-bandit-green.svg"></a>
+<a href="https://github.com/psf/black"><img alt="code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
 Recently the excellent [`object_store`](https://crates.io/crates/object_store) crate has been
 [donated](https://www.influxdata.com/blog/rust-object-store-donation/) to the Apache Software Foundation.
 
@@ -35,7 +40,7 @@ just test
 ### with `pyarrow`
 
 ```py
-from pathlib import Path as PythonPath
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -47,7 +52,7 @@ from object_store import ArrowFileSystemHandler
 
 table = pa.table({"a": range(10), "b": np.random.randn(10), "c": [1, 2] * 5})
 
-base = PythonPath.cwd()
+base = Path.cwd()
 store = fs.PyFileSystem(ArrowFileSystemHandler(str(base.absolute())))
 
 pq.write_table(table.slice(0, 5), "data/data1.parquet", filesystem=store)
@@ -59,4 +64,3 @@ dataset = ds.dataset("data", format="parquet", filesystem=store)
 ## TODO
 
 - [ ] walk tree in `get_file_info_selector`
-- [ ] WHen to do abort with multi part writer
