@@ -37,3 +37,8 @@ pub async fn delete_dir(storage: &DynObjectStore, prefix: &Path) -> ObjectStoreR
     }
     Ok(())
 }
+
+/// get bytes from a location
+pub async fn get_bytes(storage: &DynObjectStore, path: &Path) -> ObjectStoreResult<Vec<u8>> {
+    Ok(storage.get(path).await?.bytes().await?.into())
+}

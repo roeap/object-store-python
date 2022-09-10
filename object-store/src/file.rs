@@ -7,10 +7,12 @@ use crate::prefix::PrefixObjectStore;
 use crate::utils::{delete_dir, wait_for_future};
 use crate::{get_storage_backend, ObjectStoreError};
 
+use object_store::MultipartId;
 use object_store::{path::Path, DynObjectStore};
 use pyo3::exceptions::{PyNotImplementedError, PyValueError};
 use pyo3::types::{IntoPyDict, PyBytes, PyString, PyType};
 use pyo3::{exceptions::PyTypeError, prelude::*};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 #[pyclass(name = "ArrowFileSystemHandler", module = "object_store", subclass)]
 #[derive(Debug, Clone)]
@@ -173,9 +175,22 @@ impl ArrowFileSystemHandler {
             .map_err(ObjectStoreError::from)?;
         Ok(file)
     }
+
+    #[args(metadata = "None")]
+    fn open_output_stream(
+        &self,
+        path: String,
+        #[allow(unused)] metadata: Option<HashMap<String, String>>,
+        py: Python,
+    ) -> PyResult<ObjectOutputStream> {
+        let path = Path::from(path);
+        let file = wait_for_future(py, ObjectOutputStream::try_new(self.inner.clone(), path))
+            .map_err(ObjectStoreError::from)?;
+        Ok(file)
+    }
 }
 
-// TODO the C++ implementation track an internal local on all random access files, DO we need this here?
+// TODO the C++ implementation track an internal lock on all random access files, DO we need this here?
 // TODO add buffer to store data ...
 #[pyclass(name = "ObjectInputFile", module = "object_store", weakref)]
 #[derive(Debug, Clone)]
@@ -242,10 +257,6 @@ impl ObjectInputFile {
         Ok(())
     }
 
-    fn download(&self) {
-        todo!()
-    }
-
     fn isatty(&self) -> PyResult<bool> {
         Ok(false)
     }
@@ -256,6 +267,10 @@ impl ObjectInputFile {
 
     fn seekable(&self) -> PyResult<bool> {
         Ok(true)
+    }
+
+    fn writable(&self) -> PyResult<bool> {
+        Ok(false)
     }
 
     fn tell(&self) -> PyResult<i64> {
@@ -296,6 +311,7 @@ impl ObjectInputFile {
 
     #[args(nbytes = "None")]
     fn read<'py>(&mut self, nbytes: Option<i64>, py: Python<'py>) -> PyResult<&'py PyBytes> {
+        self.check_closed()?;
         let range = match nbytes {
             Some(len) => {
                 let end = i64::min(self.pos + len, self.content_length) as usize;
@@ -319,6 +335,118 @@ impl ObjectInputFile {
             Vec::new()
         };
         Ok(PyBytes::new(py, &obj))
+    }
+
+    fn fileno(&self) -> PyResult<()> {
+        Err(PyNotImplementedError::new_err("'fileno' not implemented"))
+    }
+
+    fn truncate(&self) -> PyResult<()> {
+        Err(PyNotImplementedError::new_err("'truncate' not implemented"))
+    }
+
+    fn readline(&self, _size: Option<i64>) -> PyResult<()> {
+        Err(PyNotImplementedError::new_err("'readline' not implemented"))
+    }
+
+    fn readlines(&self, _hint: Option<i64>) -> PyResult<()> {
+        Err(PyNotImplementedError::new_err(
+            "'readlines' not implemented",
+        ))
+    }
+}
+
+// TODO the C++ implementation track an internal lock on all random access files, DO we need this here?
+// TODO add buffer to store data ...
+#[pyclass(name = "ObjectOutputStream", module = "object_store", weakref)]
+pub struct ObjectOutputStream {
+    writer: Box<dyn AsyncWrite + Send + Unpin>,
+    multipart_id: MultipartId,
+    pos: i64,
+    #[pyo3(get)]
+    closed: bool,
+    #[pyo3(get)]
+    mode: String,
+}
+
+impl ObjectOutputStream {
+    pub async fn try_new(store: Arc<DynObjectStore>, path: Path) -> Result<Self, ObjectStoreError> {
+        let (multipart_id, writer) = store.put_multipart(&path).await.unwrap();
+        Ok(Self {
+            writer,
+            multipart_id,
+            pos: 0,
+            closed: false,
+            mode: "wb".into(),
+        })
+    }
+
+    fn check_closed(&self) -> Result<(), ObjectStoreError> {
+        if self.closed {
+            return Err(ObjectStoreError::Common(
+                "Operation on closed stream".into(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+#[pymethods]
+impl ObjectOutputStream {
+    fn close(&mut self, py: Python) -> PyResult<()> {
+        wait_for_future(py, self.writer.shutdown()).map_err(ObjectStoreError::from)?;
+        self.closed = true;
+        Ok(())
+    }
+
+    fn isatty(&self) -> PyResult<bool> {
+        Ok(false)
+    }
+
+    fn readable(&self) -> PyResult<bool> {
+        Ok(false)
+    }
+
+    fn seekable(&self) -> PyResult<bool> {
+        Ok(false)
+    }
+
+    fn writable(&self) -> PyResult<bool> {
+        Ok(true)
+    }
+
+    fn tell(&self) -> PyResult<i64> {
+        self.check_closed()?;
+        Ok(self.pos)
+    }
+
+    fn size(&self) -> PyResult<i64> {
+        self.check_closed()?;
+        Err(PyNotImplementedError::new_err("'size' not implemented"))
+    }
+
+    #[args(whence = "0")]
+    fn seek(&mut self, _offset: i64, _whence: i64) -> PyResult<i64> {
+        self.check_closed()?;
+        Err(PyNotImplementedError::new_err("'seek' not implemented"))
+    }
+
+    #[args(nbytes = "None")]
+    fn read(&mut self, _nbytes: Option<i64>) -> PyResult<()> {
+        self.check_closed()?;
+        Err(PyNotImplementedError::new_err("'read' not implemented"))
+    }
+
+    fn write(&mut self, data: Vec<u8>, py: Python) -> PyResult<i64> {
+        self.check_closed()?;
+        let len = data.len() as i64;
+        wait_for_future(py, self.writer.write_all(&data)).map_err(ObjectStoreError::from)?;
+        Ok(len)
+    }
+
+    fn flush(&mut self, py: Python) -> PyResult<()> {
+        Ok(wait_for_future(py, self.writer.flush()).map_err(ObjectStoreError::from)?)
     }
 
     fn fileno(&self) -> PyResult<()> {

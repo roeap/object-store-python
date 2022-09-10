@@ -59,3 +59,4 @@ cobertura.xml
 __azurite*
 __blobstorage__
 examples/data
+!examples/data/.gitkeep

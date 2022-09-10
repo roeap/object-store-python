@@ -100,5 +100,21 @@ def test_read_dataset(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem]
     pq.write_table(table.slice(5, 10), "data2.parquet", filesystem=arrow_fs)
 
     dataset = ds.dataset("/", format="parquet", filesystem=store)
+    ds_table = dataset.to_table()
 
     assert table.schema == dataset.schema
+    assert table.equals(ds_table)
+
+
+def test_write_table(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem]):
+    store, _ = file_systems
+    table = pa.table({"a": range(10), "b": np.random.randn(10), "c": [1, 2] * 5})
+
+    pq.write_table(table.slice(0, 5), "data1.parquet", filesystem=store)
+    pq.write_table(table.slice(5, 10), "data2.parquet", filesystem=store)
+
+    dataset = ds.dataset("/", format="parquet", filesystem=store)
+    ds_table = dataset.to_table()
+
+    assert table.schema == dataset.schema
+    assert table.equals(ds_table)

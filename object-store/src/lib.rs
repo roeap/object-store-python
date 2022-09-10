@@ -1,6 +1,5 @@
 mod builder;
 mod file;
-// mod filesystem;
 mod prefix;
 mod settings;
 mod utils;
@@ -9,9 +8,9 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
-use crate::file::{ArrowFileSystemHandler, ObjectInputFile};
+use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
 use crate::prefix::PrefixObjectStore;
-use crate::utils::{flatten_list_stream, wait_for_future};
+use crate::utils::{flatten_list_stream, get_bytes, wait_for_future};
 
 use builder::get_storage_backend;
 use object_store::path::{Error as PathError, Path};
@@ -27,6 +26,7 @@ pub enum ObjectStoreError {
     ObjectStore(InnerObjectStoreError),
     Common(String),
     Python(PyErr),
+    IO(std::io::Error),
     Path(PathError),
 }
 
@@ -36,6 +36,7 @@ impl fmt::Display for ObjectStoreError {
             ObjectStoreError::ObjectStore(e) => write!(f, "ObjectStore error: {:?}", e),
             ObjectStoreError::Python(e) => write!(f, "Python error {:?}", e),
             ObjectStoreError::Path(e) => write!(f, "Path error {:?}", e),
+            ObjectStoreError::IO(e) => write!(f, "IOError error {:?}", e),
             ObjectStoreError::Common(e) => write!(f, "{}", e),
         }
     }
@@ -50,6 +51,12 @@ impl From<InnerObjectStoreError> for ObjectStoreError {
 impl From<PathError> for ObjectStoreError {
     fn from(err: PathError) -> ObjectStoreError {
         ObjectStoreError::Path(err)
+    }
+}
+
+impl From<std::io::Error> for ObjectStoreError {
+    fn from(err: std::io::Error) -> ObjectStoreError {
+        ObjectStoreError::IO(err)
     }
 }
 
@@ -204,20 +211,6 @@ struct PyObjectStore {
     inner: Arc<DynObjectStore>,
 }
 
-impl PyObjectStore {
-    async fn get_inner(&self, location: &Path) -> PyResult<Vec<u8>> {
-        Ok(self
-            .inner
-            .get(location)
-            .await
-            .map_err(ObjectStoreError::from)?
-            .bytes()
-            .await
-            .map_err(ObjectStoreError::from)?
-            .into())
-    }
-}
-
 #[pymethods]
 impl PyObjectStore {
     #[new]
@@ -240,7 +233,8 @@ impl PyObjectStore {
 
     /// Return the bytes that are stored at the specified location.
     fn get<'py>(&self, location: PyPath, py: Python<'py>) -> PyResult<&'py PyBytes> {
-        let obj = wait_for_future(py, self.get_inner(&location.into()))?;
+        let obj = wait_for_future(py, get_bytes(self.inner.as_ref(), &location.into()))
+            .map_err(ObjectStoreError::from)?;
         Ok(PyBytes::new(py, &obj))
     }
 
@@ -358,6 +352,7 @@ fn _internal(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyListResult>()?;
     m.add_class::<ArrowFileSystemHandler>()?;
     m.add_class::<ObjectInputFile>()?;
+    m.add_class::<ObjectOutputStream>()?;
 
     Ok(())
 }

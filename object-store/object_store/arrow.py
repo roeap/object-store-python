@@ -12,12 +12,13 @@ class ArrowFileSystemHandler(_ArrowFileSystemHandler, fs.FileSystemHandler):
         return _ArrowFileSystemHandler.move_file(self, src, dest)
 
     def open_input_file(self, path: str) -> pa.PythonFile:
-        file = _ArrowFileSystemHandler.open_input_file(self, path)
-        return pa.PythonFile(file)
+        return pa.PythonFile(_ArrowFileSystemHandler.open_input_file(self, path))
 
     def open_input_stream(self, path: str) -> pa.PythonFile:
-        file = _ArrowFileSystemHandler.open_input_file(self, path)
-        return pa.PythonFile(file)
+        return pa.PythonFile(_ArrowFileSystemHandler.open_input_file(self, path))
+
+    def open_output_stream(self, path: str, metadata: dict[str, str] | None = None) -> pa.PythonFile:
+        return pa.PythonFile(_ArrowFileSystemHandler.open_output_stream(self, path, metadata))
 
     def get_file_info_selector(self, selector: fs.FileSelector) -> list[fs.FileInfo]:
         return _ArrowFileSystemHandler.get_file_info_selector(
