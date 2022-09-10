@@ -1,0 +1,104 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import numpy as np
+import pyarrow as pa
+import pyarrow.dataset as ds
+import pyarrow.fs as fs
+import pyarrow.parquet as pq
+import pytest
+
+from object_store import ArrowFileSystemHandler
+
+
+@pytest.fixture
+def file_systems(datadir: Path):
+    store = fs.PyFileSystem(ArrowFileSystemHandler(str(datadir.absolute())))
+    arrow_fs = fs.SubTreeFileSystem(str(datadir.absolute()), fs.LocalFileSystem())
+    return (store, arrow_fs)
+
+
+@pytest.fixture
+def table_data():
+    return pa.Table.from_arrays([pa.array([1, 2, 3]), pa.array(["a", "b", "c"])], names=["int", "str"])
+
+
+def test_file_info(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem], table_data):
+    store, arrow_fs = file_systems
+    file_path = "table.parquet"
+
+    pq.write_table(table_data, file_path, filesystem=arrow_fs)
+
+    info = store.get_file_info(file_path)
+    arrow_info = arrow_fs.get_file_info(file_path)
+
+    assert type(info) == type(arrow_info)
+    assert info.path == arrow_info.path
+    assert info.type == arrow_info.type
+    assert info.size == arrow_info.size
+    assert info.mtime_ns == arrow_info.mtime_ns
+    assert info.mtime == arrow_info.mtime
+
+
+def test_open_input_file(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem], table_data):
+    store, arrow_fs = file_systems
+    file_path = "table.parquet"
+
+    pq.write_table(table_data, file_path, filesystem=arrow_fs)
+
+    file = store.open_input_file(file_path)
+    arrow_file = arrow_fs.open_input_file(file_path)
+
+    # Check the metadata
+    assert file.mode == arrow_file.mode
+    assert file.closed == arrow_file.closed
+    assert file.size() == arrow_file.size()
+    assert file.isatty() == arrow_file.isatty()
+    assert file.readable() == arrow_file.readable()
+    assert file.seekable() == arrow_file.seekable()
+
+    # Check reading the same content
+    assert file.read() == arrow_file.read()
+    # Check subsequent read (should return no data anymore)
+    assert file.read() == arrow_file.read()
+    assert file.read() == b""
+
+    file = store.open_input_file(file_path)
+    arrow_file = arrow_fs.open_input_file(file_path)
+
+    # Check seeking works as expected
+    assert file.tell() == arrow_file.tell()
+    assert file.seek(2) == arrow_file.seek(2)
+    assert file.tell() == arrow_file.tell()
+    assert file.tell() == 2
+
+    # check reading works as expected
+    assert file.read(10) == arrow_file.read(10)
+    assert file.read1(10) == arrow_file.read1(10)
+    assert file.read_at(10, 0) == arrow_file.read_at(10, 0)
+
+
+def test_read_table(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem], table_data):
+    store, arrow_fs = file_systems
+    file_path = "table.parquet"
+
+    pq.write_table(table_data, file_path, filesystem=arrow_fs)
+
+    table = pq.read_table(file_path, filesystem=store)
+    arrow_table = pq.read_table(file_path, filesystem=arrow_fs)
+
+    assert isinstance(table, pa.Table)
+    assert table.equals(arrow_table)
+
+
+def test_read_dataset(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem]):
+    store, arrow_fs = file_systems
+    table = pa.table({"a": range(10), "b": np.random.randn(10), "c": [1, 2] * 5})
+
+    pq.write_table(table.slice(0, 5), "data1.parquet", filesystem=arrow_fs)
+    pq.write_table(table.slice(5, 10), "data2.parquet", filesystem=arrow_fs)
+
+    dataset = ds.dataset("/", format="parquet", filesystem=store)
+
+    assert table.schema == dataset.schema

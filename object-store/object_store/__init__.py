@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from io import BytesIO
-from pathlib import Path as PythonPath
-from typing import TYPE_CHECKING, List
+from typing import List
 
 # NOTE aliasing the imports with 'as' makes them public in the eyes
 # of static code checkers. Thus we avoid listing them with __all__ = ...
-from ._internal import FileSelector as _FileSelector
 from ._internal import ListResult as ListResult
 from ._internal import ObjectMeta as ObjectMeta
 from ._internal import ObjectStore as _ObjectStore
@@ -17,8 +15,10 @@ try:
 except ImportError:
     import importlib_metadata  # type: ignore
 
-if TYPE_CHECKING:
-    import pyarrow.fs as pa_fs
+try:
+    from .arrow import ArrowFileSystemHandler as ArrowFileSystemHandler
+except ImportError:
+    ArrowFileSystemHandler = object
 
 __version__ = importlib_metadata.version(__name__)
 
@@ -181,21 +181,3 @@ class ObjectStore(_ObjectStore):
             dst (PathLike): destination path
         """
         return super().rename_if_not_exists(_as_path(src), _as_path(dst))
-
-    def get_file_info(
-        self, paths_or_selector: str | list[str] | pa_fs.FileSelector
-    ) -> pa_fs.FileInfo | list[pa_fs.FileInfo]:
-        is_list = True
-        selectors = []
-        if isinstance(paths_or_selector, str):
-            selectors = [_FileSelector(paths_or_selector)]
-            is_list = False
-        if isinstance(paths_or_selector, List):
-            selectors = [_FileSelector(path) for path in paths_or_selector]  # type: ignore
-
-        result = super().get_file_info(selectors)
-
-        if is_list:
-            return result
-
-        return result[0]

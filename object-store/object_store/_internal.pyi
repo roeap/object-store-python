@@ -1,4 +1,8 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pyarrow as pa
+    import pyarrow.fs as fs
 
 class Path:
     def __init__(self, raw: str | list[str]) -> None: ...
@@ -55,6 +59,24 @@ class ObjectStore:
 
         Will return an error if the destination already has an object.
         """
+
+class ObjectInputFile:
+    @property
+    def closed(self) -> bool: ...
+    @property
+    def mode(self) -> str: ...
+    def isatty(self) -> bool: ...
+    def readable(self) -> bool: ...
+    def seekable(self) -> bool: ...
+    def tell(self) -> int: ...
+    def size(self) -> int: ...
+    def seek(self, position: int, whence: int) -> int: ...
+    def read(self, nbytes: int) -> bytes: ...
+
+class ArrowFileSystemHandler:
+    """Implementation of pyarrow.fs.FileSystemHandler for use with pyarrow.fs.PyFileSystem"""
+
+    def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
     def copy_file(self, src: str, dst: str) -> None:
         """Copy a file.
 
@@ -75,13 +97,21 @@ class ObjectStore:
 
         Like delete_dir, but doesn't delete the directory itself.
         """
-    def get_file_info(self, paths_or_selector) -> Any | list[Any]:
+    def get_file_info(self, paths: list[str]) -> list[fs.FileInfo]:
         """Get info for the given files.
 
         A non-existing or unreachable file returns a FileStat object and has a FileType of value NotFound.
         An exception indicates a truly exceptional condition (low-level I/O error, etc.).
         """
-    def move(self, src: str, dest: str) -> None:
+    def get_file_info_selector(
+        self, base_dir: str, allow_not_found: bool = False, recursive: bool = False
+    ) -> list[fs.FileInfo]:
+        """Get info for the given files.
+
+        A non-existing or unreachable file returns a FileStat object and has a FileType of value NotFound.
+        An exception indicates a truly exceptional condition (low-level I/O error, etc.).
+        """
+    def move_file(self, src: str, dest: str) -> None:
         """Move / rename a file or directory.
 
         If the destination exists: - if it is a non-empty directory, an error is returned - otherwise,
@@ -90,6 +120,8 @@ class ObjectStore:
         """
     def normalize_path(self, path: str) -> str:
         """Normalize filesystem path."""
+    def open_input_file(self, path: str) -> ObjectInputFile:
+        """Open an input file for random access reading."""
 
 class ObjectMeta:
     """The metadata that describes an object."""
@@ -113,22 +145,3 @@ class ListResult:
     @property
     def objects(self) -> list[ObjectMeta]:
         """Object metadata for the listing"""
-
-class FileSelector:
-    """File and directory selector.
-
-    It contains a set of options that describes how to search for files and directories.
-    """
-
-    def __init__(self, base_dir: str, allow_not_found: bool = False, recursive: bool = False) -> None: ...
-    @property
-    def base_dir(self) -> str:
-        """The directory in which to select files."""
-    @property
-    def allow_not_found(self) -> bool:
-        """he behavior if base_dir doesn’t exist in the filesystem.
-        If false, an error is returned. If true, an empty selection is returned.
-        """
-    @property
-    def recursive(self) -> bool:
-        """Whether to recurse into subdirectories."""

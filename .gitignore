@@ -58,3 +58,4 @@ cobertura.xml
 
 __azurite*
 __blobstorage__
+examples/data
