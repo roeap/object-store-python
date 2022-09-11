@@ -27,6 +27,7 @@ pub enum ObjectStoreError {
     Common(String),
     Python(PyErr),
     IO(std::io::Error),
+    Task(tokio::task::JoinError),
     Path(PathError),
 }
 
@@ -37,6 +38,7 @@ impl fmt::Display for ObjectStoreError {
             ObjectStoreError::Python(e) => write!(f, "Python error {:?}", e),
             ObjectStoreError::Path(e) => write!(f, "Path error {:?}", e),
             ObjectStoreError::IO(e) => write!(f, "IOError error {:?}", e),
+            ObjectStoreError::Task(e) => write!(f, "Task error {:?}", e),
             ObjectStoreError::Common(e) => write!(f, "{}", e),
         }
     }
@@ -51,6 +53,12 @@ impl From<InnerObjectStoreError> for ObjectStoreError {
 impl From<PathError> for ObjectStoreError {
     fn from(err: PathError) -> ObjectStoreError {
         ObjectStoreError::Path(err)
+    }
+}
+
+impl From<tokio::task::JoinError> for ObjectStoreError {
+    fn from(err: tokio::task::JoinError) -> ObjectStoreError {
+        ObjectStoreError::Task(err)
     }
 }
 

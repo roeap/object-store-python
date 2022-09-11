@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +40,25 @@ def test_file_info(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem], t
     assert info.size == arrow_info.size
     assert info.mtime_ns == arrow_info.mtime_ns
     assert info.mtime == arrow_info.mtime
+
+
+def test_get_file_info_selector(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem]):
+    store, arrow_fs = file_systems
+    table = pa.table({"a": range(10), "b": np.random.randn(10), "c": [1, 2] * 5})
+    partitioning = ds.partitioning(pa.schema([("c", pa.int64())]), flavor="hive")
+    ds.write_dataset(
+        table,
+        "/",
+        partitioning=partitioning,
+        format="parquet",
+        filesystem=arrow_fs,
+    )
+
+    selector = fs.FileSelector("/", recursive=True)
+    infos = store.get_file_info(selector)
+    arrow_infos = arrow_fs.get_file_info(selector)
+
+    assert Counter([i.type for i in infos]) == Counter([i.type for i in arrow_infos])
 
 
 def test_open_input_file(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem], table_data):
@@ -116,5 +136,30 @@ def test_write_table(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem])
     dataset = ds.dataset("/", format="parquet", filesystem=store)
     ds_table = dataset.to_table()
 
-    assert table.schema == dataset.schema
+    assert table.schema == ds_table.schema
     assert table.equals(ds_table)
+
+
+def test_write_partitioned_dataset(file_systems: tuple[fs.PyFileSystem, fs.SubTreeFileSystem]):
+    store, arrow_fs = file_systems
+    table = pa.table({"a": range(10), "b": np.random.randn(10), "c": [1, 2] * 5})
+
+    partitioning = ds.partitioning(pa.schema([("c", pa.int64())]), flavor="hive")
+    ds.write_dataset(
+        table,
+        "/",
+        partitioning=partitioning,
+        format="parquet",
+        filesystem=store,
+    )
+
+    dataset = ds.dataset("/", format="parquet", filesystem=arrow_fs, partitioning=partitioning)
+    ds_table = dataset.to_table().select(["a", "b", "c"])
+
+    dataset = ds.dataset("/", format="parquet", filesystem=store, partitioning=partitioning)
+    ds_table2 = dataset.to_table().select(["a", "b", "c"])
+
+    assert table.schema == ds_table.schema
+    assert table.schema == ds_table2.schema
+    assert table.shape == ds_table.shape
+    assert table.shape == ds_table2.shape

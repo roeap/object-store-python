@@ -11,7 +11,7 @@ use url::Url;
 
 use crate::settings::AzureConfig;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 /// Well known storage services
 pub enum StorageService {
     /// Local filesystem storage
@@ -21,7 +21,7 @@ pub enum StorageService {
     /// Azure blob service
     Azure,
     /// Google cloud storage
-    GCS,
+    Gcs,
     /// In-memory store
     InMemory,
     /// Unrecognized service
@@ -152,7 +152,7 @@ impl StorageUrl {
             "file" => StorageService::Local,
             "az" | "abfs" | "abfss" | "azure" | "wasb" | "adl" => StorageService::Azure,
             "s3" | "s3a" => StorageService::S3,
-            "gs" => StorageService::GCS,
+            "gs" => StorageService::Gcs,
             "memory" => StorageService::InMemory,
             _ => StorageService::Unknown,
         }
@@ -217,7 +217,7 @@ pub(crate) fn get_storage_backend(
                 }
                 _ => todo!(),
             };
-            let mut options = options.unwrap_or_default().clone();
+            let mut options = options.unwrap_or_default();
             if let Some(account) = url_account {
                 options.insert("account_name".into(), account.into());
             }
@@ -286,7 +286,7 @@ mod tests {
             ),
             (
                 "gs://bucket/path/file.foo",
-                StorageService::GCS,
+                StorageService::Gcs,
                 Path::from("path/file.foo"),
                 Some("bucket"),
             ),

@@ -64,7 +64,3 @@ pq.write_table(table.slice(5, 10), "data/data2.parquet", filesystem=store)
 
 dataset = ds.dataset("data", format="parquet", filesystem=store)
 ```
-
-## TODO
-
-- [ ] walk tree in `get_file_info_selector`

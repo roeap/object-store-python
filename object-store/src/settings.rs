@@ -47,39 +47,39 @@ impl AzureConfigKey {
 }
 
 static ALIAS_MAP: Lazy<HashMap<&'static str, AzureConfigKey>> = Lazy::new(|| {
-    let mut m = HashMap::new();
-    m.insert("azure_storage_account_key", AzureConfigKey::AccountKey);
-    m.insert("azure_storage_access_key", AzureConfigKey::AccountKey);
-    m.insert("account_key", AzureConfigKey::AccountKey);
-    m.insert("access_key", AzureConfigKey::AccountKey);
-    m.insert("azure_storage_master_key", AzureConfigKey::AccountKey);
-    m.insert("azure_storage_key", AzureConfigKey::AccountKey);
-
-    m.insert("azure_storage_sas_key", AzureConfigKey::SasKey);
-    m.insert("sas_key", AzureConfigKey::SasKey);
-
-    m.insert("azure_storage_account_name", AzureConfigKey::AccountName);
-    m.insert("account_name", AzureConfigKey::AccountName);
-
-    m.insert("azure_storage_client_id", AzureConfigKey::ClientId);
-    m.insert("azure_client_id", AzureConfigKey::ClientId);
-    m.insert("client_id", AzureConfigKey::ClientId);
-
-    m.insert("azure_storage_tenant_id", AzureConfigKey::AuthorityId);
-    m.insert("azure_tenant_id", AzureConfigKey::AuthorityId);
-    m.insert("tenant_id", AzureConfigKey::AuthorityId);
-    m.insert("azure_storage_authority_id", AzureConfigKey::AuthorityId);
-    m.insert("azure_authority_id", AzureConfigKey::AuthorityId);
-    m.insert("authority_id", AzureConfigKey::AuthorityId);
-
-    m.insert("azure_storage_use_emulator", AzureConfigKey::UseEmulator);
-    m.insert("object_store_use_emulator", AzureConfigKey::UseEmulator);
-    m.insert("use_emulator", AzureConfigKey::UseEmulator);
-
-    m.insert("azure_storage_allow_http", AzureConfigKey::AllowHttp);
-    m.insert("object_store_allow_http", AzureConfigKey::AllowHttp);
-
-    m
+    HashMap::from([
+        // access key
+        ("azure_storage_account_key", AzureConfigKey::AccountKey),
+        ("azure_storage_access_key", AzureConfigKey::AccountKey),
+        ("account_key", AzureConfigKey::AccountKey),
+        ("access_key", AzureConfigKey::AccountKey),
+        ("azure_storage_master_key", AzureConfigKey::AccountKey),
+        ("azure_storage_key", AzureConfigKey::AccountKey),
+        // sas key
+        ("azure_storage_sas_key", AzureConfigKey::SasKey),
+        ("sas_key", AzureConfigKey::SasKey),
+        // account name
+        ("azure_storage_account_name", AzureConfigKey::AccountName),
+        ("account_name", AzureConfigKey::AccountName),
+        // client id
+        ("azure_storage_client_id", AzureConfigKey::ClientId),
+        ("azure_client_id", AzureConfigKey::ClientId),
+        ("client_id", AzureConfigKey::ClientId),
+        // authority id
+        ("azure_storage_tenant_id", AzureConfigKey::AuthorityId),
+        ("azure_tenant_id", AzureConfigKey::AuthorityId),
+        ("tenant_id", AzureConfigKey::AuthorityId),
+        ("azure_storage_authority_id", AzureConfigKey::AuthorityId),
+        ("azure_authority_id", AzureConfigKey::AuthorityId),
+        ("authority_id", AzureConfigKey::AuthorityId),
+        // use emulator
+        ("azure_storage_use_emulator", AzureConfigKey::UseEmulator),
+        ("object_store_use_emulator", AzureConfigKey::UseEmulator),
+        ("use_emulator", AzureConfigKey::UseEmulator),
+        // AllowHttp
+        ("azure_storage_allow_http", AzureConfigKey::AllowHttp),
+        ("object_store_allow_http", AzureConfigKey::AllowHttp),
+    ])
 });
 
 pub struct AzureConfig {
@@ -145,7 +145,7 @@ impl AzureConfig {
             builder = builder.with_account(
                 AzureConfigKey::AccountName
                     .get_from_env()
-                    .ok_or(ConfigError::Required("AZURE_STORAGE_ACCOUNT".into()))?,
+                    .ok_or_else(|| ConfigError::Required("AZURE_STORAGE_ACCOUNT".into()))?,
             );
         }
 
@@ -157,11 +157,10 @@ impl AzureConfig {
             }
         }
 
-        let allow_http = config.allow_http.map(|v| Some(v)).unwrap_or_else(|| {
+        let allow_http = config.allow_http.map(Some).unwrap_or_else(|| {
             AzureConfigKey::AllowHttp
                 .get_from_env()
-                .map(|val| parse_boolean(&val))
-                .flatten()
+                .and_then(|val| parse_boolean(&val))
         });
         if let Some(allow) = allow_http {
             builder = builder.with_allow_http(allow);
@@ -189,15 +188,15 @@ impl AzureConfig {
 
         let client_id = config
             .client_id
-            .map(|v| Some(v))
+            .map(Some)
             .unwrap_or_else(|| AzureConfigKey::ClientId.get_from_env());
         let client_secret = config
             .client_secret
-            .map(|v| Some(v))
+            .map(Some)
             .unwrap_or_else(|| AzureConfigKey::ClientSecret.get_from_env());
         let authority_id = config
             .authority_id
-            .map(|v| Some(v))
+            .map(Some)
             .unwrap_or_else(|| AzureConfigKey::AuthorityId.get_from_env());
 
         if let (Some(client_id), Some(client_secret), Some(tenant_id)) =
@@ -241,12 +240,12 @@ fn split_sas(sas: &str) -> Result<Vec<(String, String)>, ConfigError> {
         let mut kv = kv_pair_str.trim().split('=');
         let k = match kv.next().filter(|k| !k.chars().all(char::is_whitespace)) {
             None => {
-                return Err(ConfigError::MissingCredential.into());
+                return Err(ConfigError::MissingCredential);
             }
             Some(k) => k,
         };
         let v = match kv.next().filter(|k| !k.chars().all(char::is_whitespace)) {
-            None => return Err(ConfigError::MissingCredential.into()),
+            None => return Err(ConfigError::MissingCredential),
             Some(v) => v,
         };
         pairs.push((k.into(), v.into()))

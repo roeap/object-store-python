@@ -98,6 +98,7 @@
     "superfences",
     "tempdir",
     "tempfile",
+    "thiserror",
     "tolerations",
     "toposort",
     "typer",

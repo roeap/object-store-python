@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::prefix::PrefixObjectStore;
-use crate::utils::{delete_dir, wait_for_future};
+use crate::utils::{delete_dir, wait_for_future, walk_tree};
 use crate::{get_storage_backend, ObjectStoreError};
 
 use object_store::MultipartId;
@@ -83,7 +83,9 @@ impl ArrowFileSystemHandler {
             let path = Path::from(file_path);
             let listed = wait_for_future(py, self.inner.list_with_delimiter(Some(&path)))
                 .map_err(ObjectStoreError::from)?;
-            if listed.objects.is_empty() {
+
+            // TODO is there a better way to figure out if we are in a directory?
+            if listed.objects.is_empty() && listed.common_prefixes.is_empty() {
                 let maybe_meta = wait_for_future(py, self.inner.head(&path));
                 match maybe_meta {
                     Ok(meta) => {
@@ -124,7 +126,7 @@ impl ArrowFileSystemHandler {
     fn get_file_info_selector<'py>(
         &self,
         base_dir: String,
-        allow_not_found: bool,
+        _allow_not_found: bool,
         recursive: bool,
         py: Python<'py>,
     ) -> PyResult<Vec<&'py PyAny>> {
@@ -135,11 +137,25 @@ impl ArrowFileSystemHandler {
             fs.call_method("FileInfo", (loc, type_), Some(kwargs.into_py_dict(py)))
         };
 
-        let mut infos = Vec::new();
         let path = Path::from(base_dir);
-        let listed = wait_for_future(py, self.inner.list_with_delimiter(Some(&path)))
-            .map_err(ObjectStoreError::from)?;
-        let listed = listed
+        let list_result = wait_for_future(py, walk_tree(self.inner.clone(), &path, recursive))?;
+
+        let mut infos = Vec::new();
+
+        let prefixes = list_result
+            .common_prefixes
+            .into_iter()
+            .map(|p| {
+                to_file_info(
+                    p.to_string(),
+                    file_types.getattr("Directory")?,
+                    HashMap::new(),
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        infos.extend(prefixes);
+
+        let objects = list_result
             .objects
             .into_iter()
             .map(|meta| {
@@ -154,7 +170,8 @@ impl ArrowFileSystemHandler {
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
-        infos.extend(listed);
+        infos.extend(objects);
+
         Ok(infos)
     }
 
