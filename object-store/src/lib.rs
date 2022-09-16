@@ -92,7 +92,7 @@ impl From<ObjectStoreError> for PyErr {
     }
 }
 
-#[pyclass(name = "Path", module = "object_store", subclass)]
+#[pyclass(name = "Path", subclass)]
 #[derive(Clone)]
 struct PyPath(Path);
 
@@ -135,7 +135,7 @@ impl PyPath {
     }
 }
 
-#[pyclass(name = "ObjectMeta", module = "object_store", subclass)]
+#[pyclass(name = "ObjectMeta", subclass)]
 #[derive(Clone)]
 struct PyObjectMeta(ObjectMeta);
 
@@ -181,7 +181,7 @@ impl PyObjectMeta {
     }
 }
 
-#[pyclass(name = "ListResult", module = "object_store", subclass)]
+#[pyclass(name = "ListResult", subclass)]
 struct PyListResult(ListResult);
 
 #[pymethods]
@@ -213,7 +213,7 @@ impl From<ListResult> for PyListResult {
     }
 }
 
-#[pyclass(name = "ObjectStore", module = "object_store._internal", subclass)]
+#[pyclass(name = "ObjectStore", subclass)]
 #[derive(Debug, Clone)]
 /// A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage,
 /// Azure Blob Storage and local files.

@@ -1,8 +1,6 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use crate::ObjectStoreError;
-
 use futures::future::{join_all, BoxFuture, FutureExt};
 use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
@@ -36,7 +34,7 @@ pub async fn walk_tree(
     storage: Arc<DynObjectStore>,
     path: &Path,
     recursive: bool,
-) -> Result<ListResult, ObjectStoreError> {
+) -> ObjectStoreResult<ListResult> {
     list_with_delimiter_recursive(storage, [path.clone()], recursive).await
 }
 
@@ -44,17 +42,13 @@ fn list_with_delimiter_recursive(
     storage: Arc<DynObjectStore>,
     paths: impl IntoIterator<Item = Path>,
     recursive: bool,
-) -> BoxFuture<'static, Result<ListResult, ObjectStoreError>> {
+) -> BoxFuture<'static, ObjectStoreResult<ListResult>> {
     let mut tasks = vec![];
     for path in paths {
         let store = storage.clone();
         let prefix = path.clone();
-        let handle = tokio::task::spawn(async move {
-            store
-                .list_with_delimiter(Some(&prefix))
-                .await
-                .map_err(ObjectStoreError::from)
-        });
+        let handle =
+            tokio::task::spawn(async move { store.list_with_delimiter(Some(&prefix)).await });
         tasks.push(handle);
     }
 
@@ -62,8 +56,7 @@ fn list_with_delimiter_recursive(
         let mut results = join_all(tasks)
             .await
             .into_iter()
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(ObjectStoreError::from)?
+            .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()

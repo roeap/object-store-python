@@ -3,6 +3,7 @@ repo_url: https://github.com/roeap/object-store-python
 
 nav:
   - Home: index.md
+  - Reference: reference.md
 
 theme:
   name: material
@@ -30,3 +31,13 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_root_full_path: false
+            show_bases: false

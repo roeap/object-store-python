@@ -6,13 +6,13 @@ use crate::utils::{delete_dir, wait_for_future, walk_tree};
 use crate::{get_storage_backend, ObjectStoreError};
 
 use object_store::MultipartId;
-use object_store::{path::Path, DynObjectStore};
+use object_store::{path::Path, DynObjectStore, Error as InnerObjectStoreError, ListResult};
 use pyo3::exceptions::{PyNotImplementedError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyBytes};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
-#[pyclass(name = "ArrowFileSystemHandler", module = "object_store", subclass)]
+#[pyclass(subclass)]
 #[derive(Debug, Clone)]
 pub struct ArrowFileSystemHandler {
     inner: Arc<DynObjectStore>,
@@ -126,7 +126,7 @@ impl ArrowFileSystemHandler {
     fn get_file_info_selector<'py>(
         &self,
         base_dir: String,
-        _allow_not_found: bool,
+        allow_not_found: bool,
         recursive: bool,
         py: Python<'py>,
     ) -> PyResult<Vec<&'py PyAny>> {
@@ -138,39 +138,54 @@ impl ArrowFileSystemHandler {
         };
 
         let path = Path::from(base_dir);
-        let list_result = wait_for_future(py, walk_tree(self.inner.clone(), &path, recursive))?;
+        let list_result =
+            match wait_for_future(py, walk_tree(self.inner.clone(), &path, recursive)) {
+                Ok(res) => Ok(res),
+                Err(InnerObjectStoreError::NotFound { path, source }) => {
+                    if allow_not_found {
+                        Ok(ListResult {
+                            common_prefixes: vec![],
+                            objects: vec![],
+                        })
+                    } else {
+                        Err(InnerObjectStoreError::NotFound { path, source })
+                    }
+                }
+                Err(err) => Err(err),
+            }
+            .map_err(ObjectStoreError::from)?;
 
-        let mut infos = Vec::new();
-
-        let prefixes = list_result
-            .common_prefixes
-            .into_iter()
-            .map(|p| {
-                to_file_info(
-                    p.to_string(),
-                    file_types.getattr("Directory")?,
-                    HashMap::new(),
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        infos.extend(prefixes);
-
-        let objects = list_result
-            .objects
-            .into_iter()
-            .map(|meta| {
-                let kwargs = HashMap::from([
-                    ("size", meta.size as i64),
-                    ("mtime_ns", meta.last_modified.timestamp_nanos()),
-                ]);
-                to_file_info(
-                    meta.location.to_string(),
-                    file_types.getattr("File")?,
-                    kwargs,
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        infos.extend(objects);
+        let mut infos = vec![];
+        infos.extend(
+            list_result
+                .common_prefixes
+                .into_iter()
+                .map(|p| {
+                    to_file_info(
+                        p.to_string(),
+                        file_types.getattr("Directory")?,
+                        HashMap::new(),
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        );
+        infos.extend(
+            list_result
+                .objects
+                .into_iter()
+                .map(|meta| {
+                    let kwargs = HashMap::from([
+                        ("size", meta.size as i64),
+                        ("mtime_ns", meta.last_modified.timestamp_nanos()),
+                    ]);
+                    to_file_info(
+                        meta.location.to_string(),
+                        file_types.getattr("File")?,
+                        kwargs,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        );
 
         Ok(infos)
     }
@@ -207,7 +222,7 @@ impl ArrowFileSystemHandler {
 
 // TODO the C++ implementation track an internal lock on all random access files, DO we need this here?
 // TODO add buffer to store data ...
-#[pyclass(name = "ObjectInputFile", module = "object_store", weakref)]
+#[pyclass(weakref)]
 #[derive(Debug, Clone)]
 pub struct ObjectInputFile {
     store: Arc<DynObjectStore>,
@@ -373,7 +388,7 @@ impl ObjectInputFile {
 
 // TODO the C++ implementation track an internal lock on all random access files, DO we need this here?
 // TODO add buffer to store data ...
-#[pyclass(name = "ObjectOutputStream", module = "object_store", weakref)]
+#[pyclass(weakref)]
 pub struct ObjectOutputStream {
     store: Arc<DynObjectStore>,
     path: Path,

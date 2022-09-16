@@ -54,6 +54,7 @@
     "maturin",
     "mkdir",
     "mkdocs",
+    "mkdocstrings",
     "mlflow",
     "mlflowclient",
     "mlfusion",

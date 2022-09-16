@@ -33,8 +33,6 @@ store = fs.PyFileSystem(ArrowFileSystemHandler(str(base.absolute())))
 
 pq.write_table(table.slice(0, 5), "data/data1.parquet", filesystem=store)
 pq.write_table(table.slice(5, 10), "data/data2.parquet", filesystem=store)
-
-dataset = ds.dataset("data", format="parquet", filesystem=store)
 ```
 
 ### Mlflow
