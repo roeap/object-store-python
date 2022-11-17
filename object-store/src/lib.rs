@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
 use crate::prefix::PrefixObjectStore;
-use crate::utils::{flatten_list_stream, get_bytes, wait_for_future};
+use crate::utils::{flatten_list_stream, get_bytes};
 
 use builder::get_storage_backend;
 use object_store::path::{Error as PathError, Path};
@@ -20,6 +20,7 @@ use pyo3::exceptions::{
 };
 use pyo3::prelude::*;
 use pyo3::{types::PyBytes, PyErr};
+use tokio::runtime::Runtime;
 
 #[derive(Debug)]
 pub enum ObjectStoreError {
@@ -219,6 +220,7 @@ impl From<ListResult> for PyListResult {
 /// Azure Blob Storage and local files.
 struct PyObjectStore {
     inner: Arc<DynObjectStore>,
+    rt: Arc<Runtime>,
 }
 
 #[pymethods]
@@ -230,58 +232,63 @@ impl PyObjectStore {
         let (root_store, storage_url) =
             get_storage_backend(root, options).map_err(ObjectStoreError::from)?;
         let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
+        let rt = Runtime::new()?;
         Ok(Self {
             inner: Arc::new(store),
+            rt: Arc::new(rt),
         })
     }
 
     /// Save the provided bytes to the specified location.
     #[pyo3(text_signature = "($self, location, bytes)")]
-    fn put(&self, location: PyPath, bytes: Vec<u8>, py: Python) -> PyResult<()> {
-        wait_for_future(py, self.inner.put(&location.into(), bytes.into()))
+    fn put(&self, location: PyPath, bytes: Vec<u8>) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.put(&location.into(), bytes.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
     }
 
     /// Return the bytes that are stored at the specified location.
     #[pyo3(text_signature = "($self, location)")]
-    fn get<'py>(&self, location: PyPath, py: Python<'py>) -> PyResult<&'py PyBytes> {
-        let obj = wait_for_future(py, get_bytes(self.inner.as_ref(), &location.into()))
+    fn get(&self, location: PyPath) -> PyResult<Py<PyBytes>> {
+        let obj = self
+            .rt
+            .block_on(get_bytes(self.inner.as_ref(), &location.into()))
             .map_err(ObjectStoreError::from)?;
-        Ok(PyBytes::new(py, &obj))
+        Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
     #[pyo3(text_signature = "($self, location, start, length)")]
-    fn get_range<'py>(
-        &self,
-        location: PyPath,
-        start: usize,
-        length: usize,
-        py: Python<'py>,
-    ) -> PyResult<&'py PyBytes> {
+    fn get_range(&self, location: PyPath, start: usize, length: usize) -> PyResult<Py<PyBytes>> {
         let range = std::ops::Range {
             start,
             end: start + length,
         };
-        let obj = wait_for_future(py, self.inner.get_range(&location.into(), range))
+        let obj = self
+            .rt
+            .block_on(self.inner.get_range(&location.into(), range))
             .map_err(ObjectStoreError::from)?
             .to_vec();
-        Ok(PyBytes::new(py, &obj))
+        Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
     }
 
     /// Return the metadata for the specified location
     #[pyo3(text_signature = "($self, location)")]
-    fn head(&self, location: PyPath, py: Python) -> PyResult<PyObjectMeta> {
-        let meta = wait_for_future(py, self.inner.head(&location.into()))
+    fn head(&self, location: PyPath) -> PyResult<PyObjectMeta> {
+        let meta = self
+            .rt
+            .block_on(self.inner.head(&location.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(meta.into())
     }
 
     /// Delete the object at the specified location.
     #[pyo3(text_signature = "($self, location)")]
-    fn delete(&self, location: PyPath, py: Python) -> PyResult<()> {
-        wait_for_future(py, self.inner.delete(&location.into())).map_err(ObjectStoreError::from)?;
+    fn delete(&self, location: PyPath) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.delete(&location.into()))
+            .map_err(ObjectStoreError::from)?;
         Ok(())
     }
 
@@ -290,15 +297,17 @@ impl PyObjectStore {
     /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
     /// of `foo/bar/x` but not of `foo/bar_baz/x`.
     #[pyo3(text_signature = "($self, prefix)")]
-    fn list(&self, prefix: Option<PyPath>, py: Python) -> PyResult<Vec<PyObjectMeta>> {
-        Ok(wait_for_future(
-            py,
-            flatten_list_stream(self.inner.as_ref(), prefix.map(Path::from).as_ref()),
-        )
-        .map_err(ObjectStoreError::from)?
-        .into_iter()
-        .map(PyObjectMeta::from)
-        .collect())
+    fn list(&self, prefix: Option<PyPath>) -> PyResult<Vec<PyObjectMeta>> {
+        Ok(self
+            .rt
+            .block_on(flatten_list_stream(
+                self.inner.as_ref(),
+                prefix.map(Path::from).as_ref(),
+            ))
+            .map_err(ObjectStoreError::from)?
+            .into_iter()
+            .map(PyObjectMeta::from)
+            .collect())
     }
 
     /// List objects with the given prefix and an implementation specific
@@ -308,13 +317,14 @@ impl PyObjectStore {
     /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
     /// of `foo/bar/x` but not of `foo/bar_baz/x`.
     #[pyo3(text_signature = "($self, prefix)")]
-    fn list_with_delimiter(&self, prefix: Option<PyPath>, py: Python) -> PyResult<PyListResult> {
-        let list = wait_for_future(
-            py,
-            self.inner
-                .list_with_delimiter(prefix.map(Path::from).as_ref()),
-        )
-        .map_err(ObjectStoreError::from)?;
+    fn list_with_delimiter(&self, prefix: Option<PyPath>) -> PyResult<PyListResult> {
+        let list = self
+            .rt
+            .block_on(
+                self.inner
+                    .list_with_delimiter(prefix.map(Path::from).as_ref()),
+            )
+            .map_err(ObjectStoreError::from)?;
         Ok(list.into())
     }
 
@@ -322,8 +332,9 @@ impl PyObjectStore {
     ///
     /// If there exists an object at the destination, it will be overwritten.
     #[pyo3(text_signature = "($self, from, to)")]
-    fn copy(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
-        wait_for_future(py, self.inner.copy(&from.into(), &to.into()))
+    fn copy(&self, from: PyPath, to: PyPath) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.copy(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
     }
@@ -332,8 +343,9 @@ impl PyObjectStore {
     ///
     /// Will return an error if the destination already has an object.
     #[pyo3(text_signature = "($self, from, to)")]
-    fn copy_if_not_exists(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
-        wait_for_future(py, self.inner.copy_if_not_exists(&from.into(), &to.into()))
+    fn copy_if_not_exists(&self, from: PyPath, to: PyPath) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.copy_if_not_exists(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
     }
@@ -345,8 +357,9 @@ impl PyObjectStore {
     ///
     /// If there exists an object at the destination, it will be overwritten.
     #[pyo3(text_signature = "($self, from, to)")]
-    fn rename(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
-        wait_for_future(py, self.inner.rename(&from.into(), &to.into()))
+    fn rename(&self, from: PyPath, to: PyPath) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.rename(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
     }
@@ -355,12 +368,10 @@ impl PyObjectStore {
     ///
     /// Will return an error if the destination already has an object.
     #[pyo3(text_signature = "($self, from, to)")]
-    fn rename_if_not_exists(&self, from: PyPath, to: PyPath, py: Python) -> PyResult<()> {
-        wait_for_future(
-            py,
-            self.inner.rename_if_not_exists(&from.into(), &to.into()),
-        )
-        .map_err(ObjectStoreError::from)?;
+    fn rename_if_not_exists(&self, from: PyPath, to: PyPath) -> PyResult<()> {
+        self.rt
+            .block_on(self.inner.rename_if_not_exists(&from.into(), &to.into()))
+            .map_err(ObjectStoreError::from)?;
         Ok(())
     }
 }
