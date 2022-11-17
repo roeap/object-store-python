@@ -8,22 +8,11 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.124"
     hooks:
-      - id: isort
-    args: ["--profile=black"]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-
-  - repo: https://github.com/pycqa/bandit
-    rev: 1.7.4
-    hooks:
-      - id: bandit
-        args: ["--exclude", "object-store/tests"]
+      - id: ruff
+        args: ["--config", "pyproject.toml"]
 
   - repo: https://github.com/psf/black
     rev: 22.6.0
@@ -65,7 +54,7 @@ repos:
         language: node
         pass_filenames: false
         types: [python]
-        additional_dependencies: ["pyright@1.1.270"]
+        additional_dependencies: ["pyright@1.1.280"]
 
       - id: just
         name: just

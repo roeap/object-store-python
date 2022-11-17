@@ -13,9 +13,8 @@ develop:
 
 # run static code analysers
 lint:
-    poetry run bandit -r -c pyproject.toml .
     poetry run black .
-    poetry run flake8 .
+    poetry run ruff --config pyproject.toml --fix .
 
 # run object-store python tests
 test-py:

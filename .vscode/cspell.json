@@ -79,6 +79,7 @@
     "pymdownx",
     "pymethods",
     "pymodule",
+    "pyproject",
     "pyright",
     "quicktype",
     "randn",

@@ -10,9 +10,7 @@ python = "^3.8,<3.11"
 
 # pip dependencies
 bandit = "^1.7.4"
-black = "^22.8.0"
-flake8 = "^5.0.4"
-flake8-bugbear = "^22.8.23"
+black = "^22.10.0"
 maturin = "^0.13.2"
 mkdocs = "^1.3.1"
 mkdocs-material = "^8.4.3"
@@ -23,16 +21,40 @@ ipykernel = "^6.15.2"
 pytest-cov = "^3.0.0"
 mlflow-skinny = "^1.28.0"
 duckdb = "^0.5.0"
-mkdocstrings = {version = "^0.19.0", extras = ["python"]}
+mkdocstrings = { version = "^0.19.0", extras = ["python"] }
+ruff = "^0.0.125"
 
 [tool.black]
 line-length = 120
 target-version = ['py37', 'py38', 'py39', 'py310']
 include = '\.pyi?$'
 
-[tool.isort]
-profile = "black"
-known_first_party = ["object_store"]
-
 [tool.bandit]
 exclude_dirs = ["object-store/tests"]
+
+[tool.ruff]
+exclude = [
+  '__pycache__',
+  '.git',
+  '.ipynb_checkpoints',
+  '.venv',
+  '.tox',
+  '.mypy_cache',
+  '.pytest_cache',
+  '.vscode',
+  '.github',
+  'build',
+  'dist',
+  'typestubs',
+  '*.pyi',
+]
+ignore = ['E501']
+line-length = 120
+select = ['B', 'C', 'E', 'F', "I", "S", 'W']
+
+[tool.ruff.per-file-ignores]
+# allow asserts in test files (bandit)
+"test_*" = ["S101"]
+
+[tool.ruff.isort]
+known-first-party = ["object_store"]
