@@ -21,7 +21,7 @@ fix:
 
 # run object-store python tests
 test-py:
-    pytest object-store/
+    pytest object-store/ --benchmark-autosave --cov
 
 # run object-store rust tests
 test-rs:

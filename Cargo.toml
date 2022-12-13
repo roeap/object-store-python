@@ -1,2 +1,5 @@
 [workspace]
 members = ["object-store"]
+
+[patch.crates-io]
+object_store = { git = "https://github.com/apache/arrow-rs", rev = "46b2848596216afc3bb09882b7004dbf1add57ed" }

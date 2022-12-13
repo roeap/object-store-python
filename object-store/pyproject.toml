@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=0.11,<0.15"]
+requires = ["maturin>=0.14,<0.15", "typing_extensions"]
 build-backend = "maturin"
 
 [project]
@@ -10,18 +10,24 @@ keywords = ["object-store", "azure", "aws", "gcp"]
 authors = [{ name = "Robert Pack", email = "robstar.pack@gmail.com" }]
 classifier = [
   "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: Apache Software License",
-  "License :: OSI Approved",
-  "Operating System :: MacOS",
-  "Operating System :: Microsoft :: Windows",
-  "Operating System :: POSIX :: Linux",
+  "Environment :: Console",
+  "Programming Language :: Python",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python",
-  "Programming Language :: Rust",
+  "Programming Language :: Python :: 3.11",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Environment :: MacOS X",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 [project.optional-dependencies]
@@ -29,8 +35,10 @@ pyarrow = ["pyarrow>=7.0"]
 
 [project.urls]
 repository = "https://github.com/roeap/object-store-python"
+issues = "https://github.com/roeap/object-store-python/issues"
 
 [tool.maturin]
+bindings = "pyo3"
 sdist-include = ["Cargo.lock"]
 
 [tool.coverage.report]

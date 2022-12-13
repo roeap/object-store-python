@@ -15,11 +15,6 @@ try:
 except ImportError:
     import importlib_metadata  # type: ignore
 
-try:
-    from .arrow import ArrowFileSystemHandler as ArrowFileSystemHandler
-except ImportError:
-    ArrowFileSystemHandler = object
-
 __version__ = importlib_metadata.version(__name__)
 
 PathLike = str | List[str] | Path

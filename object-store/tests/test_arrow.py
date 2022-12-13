@@ -10,7 +10,7 @@ import pyarrow.fs as fs
 import pyarrow.parquet as pq
 import pytest
 
-from object_store import ArrowFileSystemHandler
+from object_store.arrow import ArrowFileSystemHandler
 
 
 @pytest.fixture

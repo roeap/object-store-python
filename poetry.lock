@@ -84,9 +84,11 @@ files = [
 
 [package.dependencies]
 click = ">=8.0.0"
+ipython = {version = ">=7.8.0", optional = true, markers = "extra == \"jupyter\""}
 mypy-extensions = ">=0.4.3"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
+tokenize-rt = {version = ">=3.2.0", optional = true, markers = "extra == \"jupyter\""}
 tomli = {version = ">=1.1.0", markers = "python_full_version < \"3.11.0a7\""}
 typing-extensions = {version = ">=3.10.0.0", markers = "python_version < \"3.10\""}
 
@@ -1058,6 +1060,23 @@ files = [
 ]
 
 [[package]]
+name = "object-store"
+version = "0.1.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = []
+develop = true
+
+[package.extras]
+pyarrow = ["pyarrow (>=7.0)"]
+
+[package.source]
+type = "directory"
+url = "object-store"
+
+[[package]]
 name = "packaging"
 version = "22.0"
 description = "Core utilities for Python packages"
@@ -1258,6 +1277,18 @@ files = [
 ]
 
 [[package]]
+name = "py-cpuinfo"
+version = "9.0.0"
+description = "Get CPU info with pure Python"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "py-cpuinfo-9.0.0.tar.gz", hash = "sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690"},
+    {file = "py_cpuinfo-9.0.0-py3-none-any.whl", hash = "sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5"},
+]
+
+[[package]]
 name = "pyarrow"
 version = "10.0.1"
 description = "Python library for Apache Arrow"
@@ -1362,15 +1393,36 @@ tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-benchmark"
+version = "4.0.0"
+description = "A ``pytest`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest-benchmark-4.0.0.tar.gz", hash = "sha256:fb0785b83efe599a6a956361c0691ae1dbb5318018561af10f3e915caa0048d1"},
+    {file = "pytest_benchmark-4.0.0-py3-none-any.whl", hash = "sha256:fdb7db64e31c8b277dff9850d2a2556d8b60bcb0ea6524e36e28ffd7c87f71d6"},
+]
+
+[package.dependencies]
+py-cpuinfo = "*"
+pytest = ">=3.8"
+
+[package.extras]
+aspect = ["aspectlib"]
+elasticsearch = ["elasticsearch"]
+histogram = ["pygal", "pygaljs"]
+
+[[package]]
 name = "pytest-cov"
-version = "3.0.0"
+version = "4.0.0"
 description = "Pytest plugin for measuring coverage."
 category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "pytest-cov-3.0.0.tar.gz", hash = "sha256:e7f0f5b1617d2210a2cabc266dfe2f4c75a8d32fb89eafb7ad9d06f6d076d470"},
-    {file = "pytest_cov-3.0.0-py3-none-any.whl", hash = "sha256:578d5d15ac4a25e5f961c938b85a05b09fdaae9deef3bb6de9a6e766622ca7a6"},
+    {file = "pytest-cov-4.0.0.tar.gz", hash = "sha256:996b79efde6433cdbd0088872dbc5fb3ed7fe1578b68cdbba634f14bb8dd0470"},
+    {file = "pytest_cov-4.0.0-py3-none-any.whl", hash = "sha256:2feb1b751d66a8bd934e5edfa2e961d11309dc37b73b0eabe73b5945fee20f6b"},
 ]
 
 [package.dependencies]
@@ -1604,28 +1656,28 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "ruff"
-version = "0.0.176"
+version = "0.0.178"
 description = "An extremely fast Python linter, written in Rust."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "ruff-0.0.176-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:388c2792fd01ee244c1028d6bd4a284e22b8dc8bd15e340c847368e66d463f5f"},
-    {file = "ruff-0.0.176-py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:4faea42b38421c3480b73ab3f2acaec679633c8e1cec846e3d95002137341402"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:110ca29cd2f66f796a6e092831c63ddde408c68c88c68e8bdf9b5499eadae5d1"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:09c95cd51310751f3b01614d63ce199282cc33c092fcd4ec93b5c199a51d3972"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:79dec1c9797ed62dd0e0abf66b6d74648442f9ea3b7212ea24e0a1ef1fcf0423"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:12e76cc22be27ee2ab1311280102a0129c31294e19fa3c30c62590659211e263"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:d3528fba31bfe6deae055f248dca1e5335b880ea264e696f8308209860e2e59a"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6fd3c23f1e25175055e01e09c125b8efe7e9bae0c63c754135ab3f48f620930a"},
-    {file = "ruff-0.0.176-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:67ef1f67bc369c9fea8973fd321f354be4783eaf23d5de0f7470d3a76769b5af"},
-    {file = "ruff-0.0.176-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:7f1b8988bdddb54759547dda702fb14e49c28e5d8494b10e1bfd9307818819d7"},
-    {file = "ruff-0.0.176-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:6c365fef2b9d487b36e8bf03c3ce0dacff21eff1e8acb23a5fe7f1ec93687fc6"},
-    {file = "ruff-0.0.176-py3-none-musllinux_1_2_i686.whl", hash = "sha256:83ae5768eb051c3d6dd9c65a81ad1be96ac7473f1f082ffdaa81e6d54a0ce0bb"},
-    {file = "ruff-0.0.176-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:9225c5ee25d70f11aaa8cb461cc7284d66811f2ebed98ca8ff4cc35d26ab5aa0"},
-    {file = "ruff-0.0.176-py3-none-win32.whl", hash = "sha256:ca38f3d42f84f0bc33b01d20375fd0b9f9652beb6d51cebe52e8bd5574524d0d"},
-    {file = "ruff-0.0.176-py3-none-win_amd64.whl", hash = "sha256:71a5f73e544109ceb887feff02d6e5d758f20b6ddd33eadf0c61e5c441836454"},
-    {file = "ruff-0.0.176.tar.gz", hash = "sha256:94ecb718d94dd290a2c2860a64010cc2c3a8162cdeb40b09def8b611ce1b83c5"},
+    {file = "ruff-0.0.178-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:edc01a9ed28b90df2541dca499cda2e825bf710bd1e8ffa6dfeef13944b3017c"},
+    {file = "ruff-0.0.178-py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:79aceb172612c9293ed07fdd14a63c6cb2f1cd838a372914f0800fb465c8fc48"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0f040990ea0587b8205099110536882b042ff411373afc69e71d2294fe0d95ee"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:7a8e12121a42720328f9637f03dc288e089a5f51eddc3da4d14e14887bbdef7b"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c93bd93c2b18d66643669187adcf52ee16a390f8f725f68cf3d8cf25d9b0ba76"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:8a06c6f3c378e0d858eed86c2bbe4b23395c70d1bdcbb73189a0e5a5e5215480"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:8507c4c887dadb2f70075c1de76e79120b1234d81e5d79cc5c73d3504527c30f"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:8dc1af3c379d7f4643aa44cc6f70b665a86489194c6ffab49d2054880a0ad26e"},
+    {file = "ruff-0.0.178-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bf0237400af549d37533a2e3e4654fdcc93a19c7d725af8a1bb565f1e9cdfaba"},
+    {file = "ruff-0.0.178-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:1bc308172a0df7628029ac92671b48fa8a5bb1b235931a2ac4e44fffffeef76b"},
+    {file = "ruff-0.0.178-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:ffff3376e4b2ad436a1d41c5dbdc70fa33579c9658469d1efbbd907d6b480853"},
+    {file = "ruff-0.0.178-py3-none-musllinux_1_2_i686.whl", hash = "sha256:2aef8ef37aed0b65c66045fb6ed59d1b1f697fb3813ab71f8f848d3e0d2560c8"},
+    {file = "ruff-0.0.178-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:128f6c42a2b004c0680b9c0fa6af04e64bf47e87737c3b7644dfdfdf12fa5fc6"},
+    {file = "ruff-0.0.178-py3-none-win32.whl", hash = "sha256:d94d118ab838b4d920233d7dd197c572090ad69fcde08241ff17fb98aa0ca29e"},
+    {file = "ruff-0.0.178-py3-none-win_amd64.whl", hash = "sha256:4783ff67cdf0231f66b9ad808175d095feb43eb22fe6c1a87913ff74fbaac77f"},
+    {file = "ruff-0.0.178.tar.gz", hash = "sha256:0b5c9cf92a0abc05e4bd66d617951f016f806fe4cb48c665c0bf911c95c98655"},
 ]
 
 [[package]]
@@ -1676,6 +1728,18 @@ pure-eval = "*"
 
 [package.extras]
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
+
+[[package]]
+name = "tokenize-rt"
+version = "5.0.0"
+description = "A wrapper around the stdlib `tokenize` which roundtrips."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tokenize_rt-5.0.0-py2.py3-none-any.whl", hash = "sha256:c67772c662c6b3dc65edf66808577968fb10badfc2042e3027196bed4daf9e5a"},
+    {file = "tokenize_rt-5.0.0.tar.gz", hash = "sha256:3160bc0c3e8491312d0485171dea861fc160a240f5f5766b72a1165408d10740"},
+]
 
 [[package]]
 name = "toml"
@@ -1862,4 +1926,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8,<3.11"
-content-hash = "26b3e90d00d0bf52677a909f6c8024561bc0142129f3aa2e76c53a6e8bf6fc6e"
+content-hash = "5523f14add7fb9ee320cb8980da49b2b5367e83c9c4174efd808273de064e821"
