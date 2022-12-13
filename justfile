@@ -1,5 +1,8 @@
 set dotenv-load := true
 
+_default:
+    just --list
+
 # initialize repository
 init:
     poetry install --no-root
@@ -11,10 +14,10 @@ init:
 develop:
     poetry run maturin develop -m object-store/Cargo.toml --extras=pyarrow
 
-# run static code analysers
-lint:
+# run automatic code formatters
+fix:
     poetry run black .
-    poetry run ruff --config pyproject.toml --fix .
+    poetry run ruff --fix .
 
 # run object-store python tests
 test-py:

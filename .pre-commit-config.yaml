@@ -1,6 +1,8 @@
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [commit, push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -8,54 +10,50 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
 
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v2.38.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.124"
+    rev: "v0.0.176"
     hooks:
       - id: ruff
         args: ["--config", "pyproject.toml"]
 
   - repo: https://github.com/psf/black
-    rev: 22.6.0
+    rev: 22.12.0
     hooks:
       - id: black
-        args:
-          - "--line-length=120"
+        args: ["--config", "pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
+    rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
-    types_or:
-      - json
-      - toml
-      - yaml
-      - markdown
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
+    rev: v3.3.1
     hooks:
       - id: pyupgrade
         exclude: setup.py
-        entry: pyupgrade --py37-plus
+        entry: pyupgrade --py38-plus
         types:
           - python
 
   - repo: https://github.com/python-poetry/poetry
-    rev: "1.2.0"
+    rev: "1.3.0"
     hooks:
       - id: poetry-check
 
-  - repo: local
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.283
     hooks:
       - id: pyright
-        name: pyright
-        entry: pyright
-        args: ["object-store/"]
-        language: node
-        pass_filenames: false
-        types: [python]
-        additional_dependencies: ["pyright@1.1.280"]
 
+  - repo: local
+    hooks:
       - id: just
         name: just
         language: system

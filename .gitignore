@@ -60,3 +60,4 @@ __azurite*
 __blobstorage__
 examples/data
 !examples/data/.gitkeep
+.venv/
