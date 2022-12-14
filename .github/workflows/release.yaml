@@ -37,6 +37,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
       - uses: messense/maturin-action@v1
         name: Publish to pypi (without sdist)
         with:
@@ -51,6 +55,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
 
       - uses: messense/maturin-action@v1
         name: Publish to pypi (without sdist)
@@ -67,6 +75,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
       - uses: messense/maturin-action@v1
         name: Publish to pypi (without sdist)
         with:
@@ -81,6 +93,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
 
       - uses: messense/maturin-action@v1
         name: Publish manylinux to pypi x86_64 (with sdist)
