@@ -136,4 +136,4 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-      - run: maturin build -m object-store/Cargo.toml --extras=pyarrow
+      - run: maturin build -m object-store/Cargo.toml
