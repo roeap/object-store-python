@@ -14,6 +14,9 @@ init:
 develop:
     poetry run maturin develop -m object-store/Cargo.toml --extras=pyarrow
 
+build:
+    poetry run maturin build -m object-store/Cargo.toml --release
+
 # run automatic code formatters
 fix:
     poetry run black .

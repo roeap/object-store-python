@@ -3,7 +3,7 @@ requires = ["maturin>=0.14,<0.15", "typing_extensions"]
 build-backend = "maturin"
 
 [project]
-name = "object-store"
+name = "object-store-python"
 requires-python = ">=3.8"
 readme = "README.md"
 keywords = ["object-store", "azure", "aws", "gcp"]

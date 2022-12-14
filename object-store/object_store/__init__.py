@@ -13,9 +13,9 @@ from ._internal import Path as Path
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
-    import importlib_metadata  # type: ignore
+    import importlib_metadata
 
-__version__ = importlib_metadata.version(__name__)
+__version__ = importlib_metadata.version("object-store-python")
 
 PathLike = str | List[str] | Path
 BytesLike = bytes | BytesIO
