@@ -13,11 +13,12 @@ use pyo3::types::{IntoPyDict, PyBytes};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::runtime::Runtime;
 
-#[pyclass(subclass)]
+#[pyclass(subclass, weakref)]
 #[derive(Debug, Clone)]
 pub struct ArrowFileSystemHandler {
     inner: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
+    root_url: String,
 }
 
 #[pymethods]
@@ -26,10 +27,11 @@ impl ArrowFileSystemHandler {
     #[args(options = "None")]
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
         let (root_store, storage_url) =
-            get_storage_backend(root, options).map_err(ObjectStoreError::from)?;
+            get_storage_backend(root.clone(), options).map_err(ObjectStoreError::from)?;
         let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
         let rt = Runtime::new()?;
         Ok(Self {
+            root_url: root,
             inner: Arc::new(store),
             rt: Arc::new(rt),
         })
@@ -241,6 +243,27 @@ impl ArrowFileSystemHandler {
             ))
             .map_err(ObjectStoreError::from)?;
         Ok(file)
+    }
+
+    pub fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
+        Ok(PyBytes::new(py, self.root_url.as_bytes()).to_object(py))
+    }
+
+    pub fn __setstate__(&mut self, state: Vec<u8>) -> PyResult<()> {
+        let root = String::from_utf8_lossy(&state).to_string();
+        let (root_store, storage_url) = get_storage_backend(root.clone(), Default::default())
+            .map_err(ObjectStoreError::from)?;
+        let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
+        let rt = Runtime::new()?;
+        self.root_url = root;
+        self.rt = Arc::new(rt);
+        self.inner = Arc::new(store);
+
+        Ok(())
+    }
+
+    pub fn __getnewargs__(&self) -> PyResult<(String,)> {
+        Ok((self.root_url.clone(),))
     }
 }
 
