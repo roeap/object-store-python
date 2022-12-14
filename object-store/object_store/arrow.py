@@ -8,9 +8,6 @@ from ._internal import ArrowFileSystemHandler as _ArrowFileSystemHandler
 # _ArrowFileSystemHandler mus be the first element in the inherited classes, we need to also
 # inherit form fs.FileSystemHandler to pass pyarrow's type checks.
 class ArrowFileSystemHandler(_ArrowFileSystemHandler, fs.FileSystemHandler):
-    def move(self, src: str, dest: str) -> None:
-        return _ArrowFileSystemHandler.move_file(self, src, dest)
-
     def open_input_file(self, path: str) -> pa.PythonFile:
         return pa.PythonFile(_ArrowFileSystemHandler.open_input_file(self, path))
 
