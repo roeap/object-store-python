@@ -23,6 +23,7 @@ jobs:
             echo "Cargo metadata has version set to ${CURR_VER}, but got pushed tag ${PUSHED_TAG}."
             exit 1
           fi
+      - run: rm object-store/README.md && cp README.md object-store/README.md
 
   release-pypi-mac:
     needs: validate-release-tag
