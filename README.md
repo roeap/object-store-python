@@ -1,16 +1,22 @@
 # object-store-python
 
-<p align="center">
-<a href="https://github.com/roeap/object-store-python/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/roeap/object-store-python/actions/workflows/ci.yaml/badge.svg"/>
-<a href="https://github.com/psf/black"><img alt="code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"/>
-</p>
+[![CI][ci-img]][ci-link]
+[![code style: black][black-img]][black-link]
+[![PyPI - Downloads][pypi-img]][pypi-link]
 
-Recently, the excellent [`object_store`](https://crates.io/crates/object_store) crate has been
-[donated](https://www.influxdata.com/blog/rust-object-store-donation/) to the Apache Software Foundation
-And powers many popular projects like [datafusion](https://github.com/apache/arrow-datafusion),
-[InfluxDB IOX](https://github.com/influxdata/influxdb_iox), [delta-rs](https://github.com/delta-io/delta-rs), and more.
-THe `object-store-python` package provides python bindings as well some convenience and pythonic adjustments
-around the native APIs.
+Python bindings and integrations for the excellent [`object_store`][object-store] crate.
+The main idea is to provide a common interface to various storage backends including the
+objects stores from most major cloud providers. The APIs are very focussed and taylored
+towards modern cloud native applications by hiding away many features (and complexities)
+encountered in full fledges file systems.
+
+Among the included backend are:
+
+- Amazon S3 and S3 compliant APIs
+- Google Cloud Storage Buckets
+- Azure Blob Gen1 and Gen2 accounts (including ADLS Gen2)
+- local storage
+- in-memory store
 
 ## Installation
 
@@ -28,20 +34,8 @@ pip install object-store-python
 
 ## Usage
 
-The main idea behind the `ObjectStore` API is to provide a common interface to various
-storage backends including the objects stores from most major cloud providers. The APIs
-are very focussed and taylored towards modern cloud native applications by hiding away
-many features (and complexities) encountered in full fledges file systems.
-
-Among the included backend are:
-
-- Amazon S3 and S3 compliant APIs
-- Google Cloud Storage Buckets
-- Azure Blob Gen1 and Gen2 accounts (including ADLS Gen2)
-- local storage
-- in-memory store
-
-Additionally, an integration is provided to seamlessly work with the (py)arrow ecosystem.
+The main [`ObjectStore`](#object-store-python) API mirrors the native [`object_store`][object-store]
+implementation, with some slight adjustments for ease of use in python programs.
 
 ### `ObjectStore` api
 
@@ -119,3 +113,11 @@ To run the rust as well as python tests:
 ```sh
 just test
 ```
+
+[object-store]: https://crates.io/crates/object_store
+[pypi-img]: https://img.shields.io/pypi/dm/object-store-python
+[pypi-link]: https://pypi.org/project/object-store-python/
+[ci-img]: https://github.com/roeap/object-store-python/actions/workflows/ci.yaml/badge.svg
+[ci-link]: https://github.com/roeap/object-store-python/actions/workflows/ci.yaml
+[black-img]: https://img.shields.io/badge/code%20style-black-000000.svg
+[black-link]: https://github.com/psf/black
