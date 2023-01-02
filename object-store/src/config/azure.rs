@@ -1,25 +1,11 @@
 use std::collections::HashMap;
 
+use super::{str_is_truthy, ConfigError};
+
 use object_store::azure::MicrosoftAzureBuilder;
-use object_store::{Error as ObjectStoreError, Result as ObjectStoreResult};
+use object_store::Result as ObjectStoreResult;
 use once_cell::sync::Lazy;
-
-#[derive(Debug, thiserror::Error)]
-enum ConfigError {
-    #[error("Missing configuration {0}")]
-    Required(String),
-    #[error("Failed to find valid credential.")]
-    MissingCredential,
-}
-
-impl From<ConfigError> for ObjectStoreError {
-    fn from(err: ConfigError) -> Self {
-        ObjectStoreError::Generic {
-            store: "Generic",
-            source: Box::new(err),
-        }
-    }
-}
+use percent_encoding::percent_decode_str;
 
 #[derive(PartialEq, Eq)]
 enum AzureConfigKey {
@@ -51,12 +37,14 @@ static ALIAS_MAP: Lazy<HashMap<&'static str, AzureConfigKey>> = Lazy::new(|| {
         // access key
         ("azure_storage_account_key", AzureConfigKey::AccountKey),
         ("azure_storage_access_key", AzureConfigKey::AccountKey),
-        ("account_key", AzureConfigKey::AccountKey),
-        ("access_key", AzureConfigKey::AccountKey),
         ("azure_storage_master_key", AzureConfigKey::AccountKey),
         ("azure_storage_key", AzureConfigKey::AccountKey),
+        ("account_key", AzureConfigKey::AccountKey),
+        ("access_key", AzureConfigKey::AccountKey),
         // sas key
+        ("azure_storage_sas_token", AzureConfigKey::SasKey),
         ("azure_storage_sas_key", AzureConfigKey::SasKey),
+        ("sas_token", AzureConfigKey::SasKey),
         ("sas_key", AzureConfigKey::SasKey),
         // account name
         ("azure_storage_account_name", AzureConfigKey::AccountName),
@@ -65,24 +53,25 @@ static ALIAS_MAP: Lazy<HashMap<&'static str, AzureConfigKey>> = Lazy::new(|| {
         ("azure_storage_client_id", AzureConfigKey::ClientId),
         ("azure_client_id", AzureConfigKey::ClientId),
         ("client_id", AzureConfigKey::ClientId),
+        // client secret
+        ("azure_storage_client_secret", AzureConfigKey::ClientSecret),
+        ("azure_client_secret", AzureConfigKey::ClientSecret),
+        ("client_secret", AzureConfigKey::ClientSecret),
         // authority id
         ("azure_storage_tenant_id", AzureConfigKey::AuthorityId),
-        ("azure_tenant_id", AzureConfigKey::AuthorityId),
-        ("tenant_id", AzureConfigKey::AuthorityId),
         ("azure_storage_authority_id", AzureConfigKey::AuthorityId),
+        ("azure_tenant_id", AzureConfigKey::AuthorityId),
         ("azure_authority_id", AzureConfigKey::AuthorityId),
+        ("tenant_id", AzureConfigKey::AuthorityId),
         ("authority_id", AzureConfigKey::AuthorityId),
         // use emulator
         ("azure_storage_use_emulator", AzureConfigKey::UseEmulator),
         ("object_store_use_emulator", AzureConfigKey::UseEmulator),
         ("use_emulator", AzureConfigKey::UseEmulator),
-        // AllowHttp
-        ("azure_storage_allow_http", AzureConfigKey::AllowHttp),
-        ("object_store_allow_http", AzureConfigKey::AllowHttp),
     ])
 });
 
-pub struct AzureConfig {
+pub(crate) struct AzureConfig {
     account_key: Option<String>,
     account_name: Option<String>,
     client_id: Option<String>,
@@ -113,8 +102,8 @@ impl AzureConfig {
                     AzureConfigKey::ClientSecret => client_secret = Some(value.clone()),
                     AzureConfigKey::AuthorityId => authority_id = Some(value.clone()),
                     AzureConfigKey::SasKey => sas_key = Some(value.clone()),
-                    AzureConfigKey::UseEmulator => use_emulator = parse_boolean(value),
-                    AzureConfigKey::AllowHttp => allow_http = parse_boolean(value),
+                    AzureConfigKey::UseEmulator => use_emulator = Some(str_is_truthy(value)),
+                    AzureConfigKey::AllowHttp => allow_http = Some(str_is_truthy(value)),
                 }
             }
         }
@@ -131,37 +120,53 @@ impl AzureConfig {
         }
     }
 
+    fn get_value(&self, key: AzureConfigKey) -> Option<String> {
+        match key {
+            AzureConfigKey::AccountKey => self.account_key.clone().or(key.get_from_env()),
+            AzureConfigKey::AccountName => self.account_name.clone().or(key.get_from_env()),
+            AzureConfigKey::ClientId => self.client_id.clone().or(key.get_from_env()),
+            AzureConfigKey::ClientSecret => self.client_secret.clone().or(key.get_from_env()),
+            AzureConfigKey::AuthorityId => self.authority_id.clone().or(key.get_from_env()),
+            AzureConfigKey::SasKey => self.sas_key.clone().or(key.get_from_env()),
+            AzureConfigKey::UseEmulator => self
+                .use_emulator
+                .clone()
+                .map(|v| v.to_string())
+                .or(key.get_from_env()),
+            AzureConfigKey::AllowHttp => self
+                .allow_http
+                .clone()
+                .map(|v| v.to_string())
+                .or(key.get_from_env()),
+        }
+    }
+
     /// Check all options if a valid builder can be generated, if not, check if configuration
     /// can be read from the environment.
     pub fn get_builder(
-        url: impl AsRef<str>,
+        url: impl Into<String>,
         options: &HashMap<String, String>,
     ) -> ObjectStoreResult<MicrosoftAzureBuilder> {
         let config = Self::new(options);
 
-        let mut builder = MicrosoftAzureBuilder::default().with_url(url);
-        if let Some(account) = config.account_name {
-            builder = builder.with_account(account);
-        } else {
-            builder = builder.with_account(
-                AzureConfigKey::AccountName
-                    .get_from_env()
-                    .ok_or_else(|| ConfigError::Required("AZURE_STORAGE_ACCOUNT".into()))?,
-            );
-        }
+        let mut builder = MicrosoftAzureBuilder::default().with_url(url).with_account(
+            config
+                .get_value(AzureConfigKey::AccountName)
+                .ok_or(ConfigError::required(
+                    "azure storage account must be specified.",
+                ))?,
+        );
 
         if let Some(use_emulator) = config.use_emulator {
             builder = builder.with_use_emulator(use_emulator);
         } else if let Some(val) = AzureConfigKey::UseEmulator.get_from_env() {
-            if let Some(use_emulator) = parse_boolean(&val) {
-                builder = builder.with_use_emulator(use_emulator);
-            }
+            builder = builder.with_use_emulator(str_is_truthy(&val));
         }
 
         let allow_http = config.allow_http.map(Some).unwrap_or_else(|| {
             AzureConfigKey::AllowHttp
                 .get_from_env()
-                .and_then(|val| parse_boolean(&val))
+                .and_then(|val| Some(str_is_truthy(&val)))
         });
         if let Some(allow) = allow_http {
             builder = builder.with_allow_http(allow);
@@ -217,38 +222,20 @@ impl AzureConfig {
     }
 }
 
-fn parse_boolean(term: &str) -> Option<bool> {
-    match term.to_lowercase().as_str() {
-        "true" => Some(true),
-        "1" => Some(true),
-        "yes" => Some(true),
-        "y" => Some(true),
-        "false" => Some(false),
-        "0" => Some(false),
-        "no" => Some(false),
-        "n" => Some(false),
-        _ => None,
-    }
-}
-
 fn split_sas(sas: &str) -> Result<Vec<(String, String)>, ConfigError> {
+    let sas = percent_decode_str(sas)
+        .decode_utf8()
+        .map_err(|err| ConfigError::Decode(err.to_string()))?;
     let kv_str_pairs = sas
         .trim_start_matches('?')
         .split('&')
         .filter(|s| !s.chars().all(char::is_whitespace));
     let mut pairs = Vec::new();
     for kv_pair_str in kv_str_pairs {
-        let mut kv = kv_pair_str.trim().split('=');
-        let k = match kv.next().filter(|k| !k.chars().all(char::is_whitespace)) {
-            None => {
-                return Err(ConfigError::MissingCredential);
-            }
-            Some(k) => k,
-        };
-        let v = match kv.next().filter(|k| !k.chars().all(char::is_whitespace)) {
-            None => return Err(ConfigError::MissingCredential),
-            Some(v) => v,
-        };
+        let (k, v) = kv_pair_str
+            .trim()
+            .split_once('=')
+            .ok_or(ConfigError::MissingCredential)?;
         pairs.push((k.into(), v.into()))
     }
     Ok(pairs)

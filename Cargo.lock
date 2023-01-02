@@ -655,6 +655,7 @@ dependencies = [
  "futures",
  "object_store",
  "once_cell",
+ "percent-encoding",
  "pyo3",
  "reqwest",
  "thiserror",
@@ -665,7 +666,7 @@ dependencies = [
 [[package]]
 name = "object_store"
 version = "0.5.2"
-source = "git+https://github.com/apache/arrow-rs?rev=2408bb274e82c785cca9b4596cd8f201ccc5d7c6#2408bb274e82c785cca9b4596cd8f201ccc5d7c6"
+source = "git+https://github.com/apache/arrow-rs?rev=1889e33da31218ee2c58ad874036b17b699538b9#1889e33da31218ee2c58ad874036b17b699538b9"
 dependencies = [
  "async-trait",
  "base64 0.20.0",

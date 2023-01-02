@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::builder::StorageBuilder;
+use crate::builder::ObjectStoreBuilder;
 use crate::utils::{delete_dir, walk_tree};
 use crate::ObjectStoreError;
 
@@ -27,7 +27,7 @@ impl ArrowFileSystemHandler {
     #[new]
     #[args(options = "None")]
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
-        let inner = StorageBuilder::new(root.clone())
+        let inner = ObjectStoreBuilder::new(root.clone())
             .with_options(options.clone().unwrap_or_default())
             .build()
             .map_err(ObjectStoreError::from)?;

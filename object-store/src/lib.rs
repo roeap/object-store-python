@@ -1,6 +1,6 @@
 mod builder;
+mod config;
 mod file;
-mod settings;
 mod utils;
 
 use std::collections::HashMap;
@@ -10,7 +10,6 @@ use std::sync::Arc;
 use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
 use crate::utils::{flatten_list_stream, get_bytes};
 
-use builder::StorageBuilder;
 use object_store::path::{Error as PathError, Path};
 use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, ObjectMeta};
 use pyo3::exceptions::{
@@ -19,6 +18,8 @@ use pyo3::exceptions::{
 use pyo3::prelude::*;
 use pyo3::{types::PyBytes, PyErr};
 use tokio::runtime::Runtime;
+
+pub use builder::ObjectStoreBuilder;
 
 #[derive(Debug)]
 pub enum ObjectStoreError {
@@ -229,7 +230,7 @@ impl PyObjectStore {
     #[args(options = "None")]
     /// Create a new ObjectStore instance
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
-        let inner = StorageBuilder::new(root.clone())
+        let inner = ObjectStoreBuilder::new(root.clone())
             .with_options(options.clone().unwrap_or_default())
             .build()
             .map_err(ObjectStoreError::from)?;
