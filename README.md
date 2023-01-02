@@ -1,8 +1,8 @@
 # object-store-python
 
 <p align="center">
-<a href="https://github.com/PyCQA/bandit"><img alt="security: bandit" src="https://img.shields.io/badge/security-bandit-green.svg"></a>
-<a href="https://github.com/psf/black"><img alt="code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+<a href="https://github.com/roeap/object-store-python/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/roeap/object-store-python/actions/workflows/ci.yaml/badge.svg"/>
+<a href="https://github.com/psf/black"><img alt="code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"/>
 </p>
 
 Recently, the excellent [`object_store`](https://crates.io/crates/object_store) crate has been
