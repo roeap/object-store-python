@@ -157,30 +157,36 @@ impl S3Config {
 
     fn get_value(&self, key: S3ConfigKey) -> Option<String> {
         match key {
-            S3ConfigKey::AccessKeyId => self.access_key_id.clone().or(key.get_from_env()),
-            S3ConfigKey::SecretAccessKey => self.secret_access_key.clone().or(key.get_from_env()),
+            S3ConfigKey::AccessKeyId => self.access_key_id.clone().or_else(|| key.get_from_env()),
+            S3ConfigKey::SecretAccessKey => self
+                .secret_access_key
+                .clone()
+                .or_else(|| key.get_from_env()),
             S3ConfigKey::Region => self
                 .region
                 .clone()
-                .or(key.get_from_env())
-                .or(self.default_region.clone())
-                .or(S3ConfigKey::DefaultRegion.get_from_env()),
-            S3ConfigKey::DefaultRegion => self.default_region.clone().or(key.get_from_env()),
-            S3ConfigKey::Bucket => self.bucket.clone().or(key.get_from_env()),
-            S3ConfigKey::Endpoint => self.endpoint.clone().or(key.get_from_env()),
-            S3ConfigKey::Token => self.token.clone().or(key.get_from_env()),
+                .or_else(|| key.get_from_env())
+                .or_else(|| self.default_region.clone())
+                .or_else(|| S3ConfigKey::DefaultRegion.get_from_env()),
+            S3ConfigKey::DefaultRegion => {
+                self.default_region.clone().or_else(|| key.get_from_env())
+            }
+            S3ConfigKey::Bucket => self.bucket.clone().or_else(|| key.get_from_env()),
+            S3ConfigKey::Endpoint => self.endpoint.clone().or_else(|| key.get_from_env()),
+            S3ConfigKey::Token => self.token.clone().or_else(|| key.get_from_env()),
             S3ConfigKey::VirtualHostedStyleRequest => self
                 .virtual_hosted_style_request
-                .clone()
                 .map(|v| v.to_string())
-                .or(key.get_from_env()),
-            S3ConfigKey::MetadataEndpoint => self.metadata_endpoint.clone().or(key.get_from_env()),
-            S3ConfigKey::Profile => self.profile.clone().or(key.get_from_env()),
+                .or_else(|| key.get_from_env()),
+            S3ConfigKey::MetadataEndpoint => self
+                .metadata_endpoint
+                .clone()
+                .or_else(|| key.get_from_env()),
+            S3ConfigKey::Profile => self.profile.clone().or_else(|| key.get_from_env()),
             S3ConfigKey::AllowHttp => self
                 .allow_http
-                .clone()
                 .map(|v| v.to_string())
-                .or(key.get_from_env()),
+                .or_else(|| key.get_from_env()),
         }
     }
 
@@ -197,12 +203,12 @@ impl S3Config {
             .with_region(
                 config
                     .get_value(S3ConfigKey::Region)
-                    .ok_or(ConfigError::required("aws region must be specified."))?,
+                    .ok_or_else(|| ConfigError::required("aws region must be specified."))?,
             )
             .with_bucket_name(
                 config
                     .get_value(S3ConfigKey::Bucket)
-                    .ok_or(ConfigError::required("aws bucket must be specified."))?,
+                    .ok_or_else(|| ConfigError::required("aws bucket must be specified."))?,
             );
 
         if let Some(endpoint) = config.get_value(S3ConfigKey::Endpoint) {

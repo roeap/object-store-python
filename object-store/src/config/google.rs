@@ -53,7 +53,9 @@ impl GoogleConfig {
 
     fn get_value(&self, key: GoogleConfigKey) -> Option<String> {
         match key {
-            GoogleConfigKey::ServiceAccount => self.service_account.clone().or(key.get_from_env()),
+            GoogleConfigKey::ServiceAccount => {
+                self.service_account.clone().or_else(|| key.get_from_env())
+            }
         }
     }
 
@@ -66,9 +68,13 @@ impl GoogleConfig {
         let config = Self::new(options);
         let builder = GoogleCloudStorageBuilder::default()
             .with_url(url)
-            .with_service_account_path(config.get_value(GoogleConfigKey::ServiceAccount).ok_or(
-                ConfigError::required("google service account must be specified."),
-            )?);
+            .with_service_account_path(
+                config
+                    .get_value(GoogleConfigKey::ServiceAccount)
+                    .ok_or_else(|| {
+                        ConfigError::required("google service account must be specified.")
+                    })?,
+            );
 
         Ok(builder)
     }

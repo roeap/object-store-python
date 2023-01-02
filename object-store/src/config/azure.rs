@@ -122,22 +122,22 @@ impl AzureConfig {
 
     fn get_value(&self, key: AzureConfigKey) -> Option<String> {
         match key {
-            AzureConfigKey::AccountKey => self.account_key.clone().or(key.get_from_env()),
-            AzureConfigKey::AccountName => self.account_name.clone().or(key.get_from_env()),
-            AzureConfigKey::ClientId => self.client_id.clone().or(key.get_from_env()),
-            AzureConfigKey::ClientSecret => self.client_secret.clone().or(key.get_from_env()),
-            AzureConfigKey::AuthorityId => self.authority_id.clone().or(key.get_from_env()),
-            AzureConfigKey::SasKey => self.sas_key.clone().or(key.get_from_env()),
+            AzureConfigKey::AccountKey => self.account_key.clone().or_else(|| key.get_from_env()),
+            AzureConfigKey::AccountName => self.account_name.clone().or_else(|| key.get_from_env()),
+            AzureConfigKey::ClientId => self.client_id.clone().or_else(|| key.get_from_env()),
+            AzureConfigKey::ClientSecret => {
+                self.client_secret.clone().or_else(|| key.get_from_env())
+            }
+            AzureConfigKey::AuthorityId => self.authority_id.clone().or_else(|| key.get_from_env()),
+            AzureConfigKey::SasKey => self.sas_key.clone().or_else(|| key.get_from_env()),
             AzureConfigKey::UseEmulator => self
                 .use_emulator
-                .clone()
                 .map(|v| v.to_string())
-                .or(key.get_from_env()),
+                .or_else(|| key.get_from_env()),
             AzureConfigKey::AllowHttp => self
                 .allow_http
-                .clone()
                 .map(|v| v.to_string())
-                .or(key.get_from_env()),
+                .or_else(|| key.get_from_env()),
         }
     }
 
@@ -152,9 +152,7 @@ impl AzureConfig {
         let mut builder = MicrosoftAzureBuilder::default().with_url(url).with_account(
             config
                 .get_value(AzureConfigKey::AccountName)
-                .ok_or(ConfigError::required(
-                    "azure storage account must be specified.",
-                ))?,
+                .ok_or_else(|| ConfigError::required("azure storage account must be specified."))?,
         );
 
         if let Some(use_emulator) = config.use_emulator {
@@ -166,7 +164,7 @@ impl AzureConfig {
         let allow_http = config.allow_http.map(Some).unwrap_or_else(|| {
             AzureConfigKey::AllowHttp
                 .get_from_env()
-                .and_then(|val| Some(str_is_truthy(&val)))
+                .map(|val| str_is_truthy(&val))
         });
         if let Some(allow) = allow_http {
             builder = builder.with_allow_http(allow);
