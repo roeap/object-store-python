@@ -8,7 +8,6 @@ init:
     poetry install --no-root
     poetry run pip install --upgrade pip
     poetry run pre-commit install
-    just develop
 
 # build development version of packages
 develop:

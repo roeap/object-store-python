@@ -32,6 +32,7 @@ classifier = [
 
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=7.0"]
+mlflow = ["mlflow>=2.0", "llvmlite>=0.39", "numba>=0.56"]
 
 [project.urls]
 repository = "https://github.com/roeap/object-store-python"

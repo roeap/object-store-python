@@ -1,12 +1,36 @@
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pyarrow as pa
     import pyarrow.fs as fs
 
 class Path:
     def __init__(self, raw: str | list[str]) -> None: ...
     def child(self, part: str) -> Path: ...
+
+class ObjectMeta:
+    """The metadata that describes an object."""
+
+    @property
+    def size(self) -> int:
+        """The size in bytes of the object"""
+    @property
+    def location(self) -> Path:
+        """The full path to the object"""
+    @property
+    def last_modified(self) -> int:
+        """The last modified time"""
+
+class ListResult:
+    """Result of a list call that includes objects and prefixes (directories)"""
+
+    @property
+    def common_prefixes(self) -> list[Path]:
+        """Prefixes that are common (like directories)"""
+    @property
+    def objects(self) -> list[ObjectMeta]:
+        """Object metadata for the listing"""
 
 class ObjectStore:
     """A uniform API for interacting with object storage services and local files."""
@@ -139,26 +163,3 @@ class ArrowFileSystemHandler:
         """Open an input file for random access reading."""
     def open_output_stream(self, path: str, metadata: dict[str, str] | None = None) -> ObjectOutputStream:
         """Open an output stream for sequential writing."""
-
-class ObjectMeta:
-    """The metadata that describes an object."""
-
-    @property
-    def size(self) -> int:
-        """The size in bytes of the object"""
-    @property
-    def location(self) -> Path:
-        """The full path to the object"""
-    @property
-    def last_modified(self) -> int:
-        """The last modified time"""
-
-class ListResult:
-    """Result of a list call that includes objects and prefixes (directories)"""
-
-    @property
-    def common_prefixes(self) -> list[Path]:
-        """Prefixes that are common (like directories)"""
-    @property
-    def objects(self) -> list[ObjectMeta]:
-        """Object metadata for the listing"""
