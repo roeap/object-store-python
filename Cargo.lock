@@ -665,7 +665,7 @@ dependencies = [
 [[package]]
 name = "object_store"
 version = "0.5.2"
-source = "git+https://github.com/apache/arrow-rs?rev=46b2848596216afc3bb09882b7004dbf1add57ed#46b2848596216afc3bb09882b7004dbf1add57ed"
+source = "git+https://github.com/apache/arrow-rs?rev=2408bb274e82c785cca9b4596cd8f201ccc5d7c6#2408bb274e82c785cca9b4596cd8f201ccc5d7c6"
 dependencies = [
  "async-trait",
  "base64 0.20.0",
@@ -874,9 +874,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.26.0"
+version = "0.27.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
+checksum = "ffc053f057dd768a56f62cd7e434c42c831d296968997e9ac1f76ea7c2d14c41"
 dependencies = [
  "memchr",
  "serde",

@@ -134,11 +134,12 @@ impl AzureConfig {
     /// Check all options if a valid builder can be generated, if not, check if configuration
     /// can be read from the environment.
     pub fn get_builder(
+        url: impl AsRef<str>,
         options: &HashMap<String, String>,
     ) -> ObjectStoreResult<MicrosoftAzureBuilder> {
         let config = Self::new(options);
 
-        let mut builder = MicrosoftAzureBuilder::default();
+        let mut builder = MicrosoftAzureBuilder::default().with_url(url);
         if let Some(account) = config.account_name {
             builder = builder.with_account(account);
         } else {

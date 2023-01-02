@@ -1,6 +1,5 @@
 mod builder;
 mod file;
-mod prefix;
 mod settings;
 mod utils;
 
@@ -9,10 +8,9 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
-use crate::prefix::PrefixObjectStore;
 use crate::utils::{flatten_list_stream, get_bytes};
 
-use builder::get_storage_backend;
+use builder::StorageBuilder;
 use object_store::path::{Error as PathError, Path};
 use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, ObjectMeta};
 use pyo3::exceptions::{
@@ -221,6 +219,8 @@ impl From<ListResult> for PyListResult {
 struct PyObjectStore {
     inner: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
+    root_url: String,
+    options: Option<HashMap<String, String>>,
 }
 
 #[pymethods]
@@ -229,13 +229,15 @@ impl PyObjectStore {
     #[args(options = "None")]
     /// Create a new ObjectStore instance
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
-        let (root_store, storage_url) =
-            get_storage_backend(root, options).map_err(ObjectStoreError::from)?;
-        let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
-        let rt = Runtime::new()?;
+        let inner = StorageBuilder::new(root.clone())
+            .with_options(options.clone().unwrap_or_default())
+            .build()
+            .map_err(ObjectStoreError::from)?;
         Ok(Self {
-            inner: Arc::new(store),
-            rt: Arc::new(rt),
+            root_url: root,
+            inner,
+            rt: Arc::new(Runtime::new()?),
+            options,
         })
     }
 
@@ -373,6 +375,10 @@ impl PyObjectStore {
             .block_on(self.inner.rename_if_not_exists(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
+    }
+
+    pub fn __getnewargs__(&self) -> PyResult<(String, Option<HashMap<String, String>>)> {
+        Ok((self.root_url.clone(), self.options.clone()))
     }
 }
 

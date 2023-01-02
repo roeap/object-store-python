@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::prefix::PrefixObjectStore;
+use crate::builder::StorageBuilder;
 use crate::utils::{delete_dir, walk_tree};
-use crate::{get_storage_backend, ObjectStoreError};
+use crate::ObjectStoreError;
 
-use object_store::MultipartId;
-use object_store::{path::Path, DynObjectStore, Error as InnerObjectStoreError, ListResult};
+use object_store::path::Path;
+use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, MultipartId};
 use pyo3::exceptions::{PyNotImplementedError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyBytes};
@@ -19,6 +19,7 @@ pub struct ArrowFileSystemHandler {
     inner: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
     root_url: String,
+    options: Option<HashMap<String, String>>,
 }
 
 #[pymethods]
@@ -26,14 +27,15 @@ impl ArrowFileSystemHandler {
     #[new]
     #[args(options = "None")]
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
-        let (root_store, storage_url) =
-            get_storage_backend(root.clone(), options).map_err(ObjectStoreError::from)?;
-        let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
-        let rt = Runtime::new()?;
+        let inner = StorageBuilder::new(root.clone())
+            .with_options(options.clone().unwrap_or_default())
+            .build()
+            .map_err(ObjectStoreError::from)?;
         Ok(Self {
             root_url: root,
-            inner: Arc::new(store),
-            rt: Arc::new(rt),
+            inner,
+            rt: Arc::new(Runtime::new()?),
+            options,
         })
     }
 
@@ -245,25 +247,8 @@ impl ArrowFileSystemHandler {
         Ok(file)
     }
 
-    pub fn __getstate__(&self, py: Python) -> PyResult<PyObject> {
-        Ok(PyBytes::new(py, self.root_url.as_bytes()).to_object(py))
-    }
-
-    pub fn __setstate__(&mut self, state: Vec<u8>) -> PyResult<()> {
-        let root = String::from_utf8_lossy(&state).to_string();
-        let (root_store, storage_url) = get_storage_backend(root.clone(), Default::default())
-            .map_err(ObjectStoreError::from)?;
-        let store = PrefixObjectStore::new(storage_url.prefix(), root_store);
-        let rt = Runtime::new()?;
-        self.root_url = root;
-        self.rt = Arc::new(rt);
-        self.inner = Arc::new(store);
-
-        Ok(())
-    }
-
-    pub fn __getnewargs__(&self) -> PyResult<(String,)> {
-        Ok((self.root_url.clone(),))
+    pub fn __getnewargs__(&self) -> PyResult<(String, Option<HashMap<String, String>>)> {
+        Ok((self.root_url.clone(), self.options.clone()))
     }
 }
 
