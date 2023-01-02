@@ -4,11 +4,12 @@ build-backend = "maturin"
 
 [project]
 name = "object-store-python"
+version = "0.0.5"
 requires-python = ">=3.8"
 readme = "README.md"
 keywords = ["object-store", "azure", "aws", "gcp"]
 authors = [{ name = "Robert Pack", email = "robstar.pack@gmail.com" }]
-classifier = [
+classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
   "Programming Language :: Python",
@@ -32,7 +33,6 @@ classifier = [
 
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=7.0"]
-mlflow = ["mlflow>=2.0", "llvmlite>=0.39", "numba>=0.56"]
 
 [project.urls]
 repository = "https://github.com/roeap/object-store-python"
