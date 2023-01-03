@@ -230,6 +230,7 @@ impl PyObjectStore {
     /// Create a new ObjectStore instance
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
         let inner = ObjectStoreBuilder::new(root.clone())
+            .with_path_as_prefix(true)
             .with_options(options.clone().unwrap_or_default())
             .build()
             .map_err(ObjectStoreError::from)?;

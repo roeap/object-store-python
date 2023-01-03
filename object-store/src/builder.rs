@@ -130,10 +130,28 @@ impl ObjectStoreBuilder {
     }
 
     pub fn build(mut self) -> ObjectStoreResult<Arc<DynObjectStore>> {
-        let url = Url::parse(&self.url).map_err(|err| ObjectStoreError::Generic {
-            store: "Generic",
-            source: Box::new(err),
-        })?;
+        let maybe_url = Url::parse(&self.url);
+        let url =
+            match maybe_url {
+                Ok(url) => Ok(url),
+                Err(url::ParseError::RelativeUrlWithoutBase) => {
+                    let abs_path = std::fs::canonicalize(std::path::PathBuf::from(&self.url))
+                        .map_err(|err| ObjectStoreError::Generic {
+                            store: "Generic",
+                            source: Box::new(err),
+                        })?;
+                    Url::parse(&format!("file://{}", abs_path.to_str().unwrap())).map_err(|err| {
+                        ObjectStoreError::Generic {
+                            store: "Generic",
+                            source: Box::new(err),
+                        }
+                    })
+                }
+                Err(err) => Err(ObjectStoreError::Generic {
+                    store: "Generic",
+                    source: Box::new(err),
+                }),
+            }?;
         let root_store = match ObjectStoreKind::parse_url(&url)? {
             ObjectStoreKind::Local => ObjectStoreImpl::Local(LocalFileSystem::new()),
             ObjectStoreKind::InMemory => ObjectStoreImpl::InMemory(InMemory::new()),
