@@ -5,39 +5,28 @@ build-backend = "maturin"
 [project]
 name = "object-store-python"
 version = "0.0.7"
-description = "A focused, easy to use, idiomatic, high performance, object store library interacting with object stores."
+description = "A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage, Azure Storage and local files."
 requires-python = ">=3.8"
 readme = "README.md"
 keywords = ["object-store", "azure", "aws", "gcp"]
 authors = [{ name = "Robert Pack", email = "robstar.pack@gmail.com" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Environment :: Console",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Intended Audience :: Developers",
-  "Intended Audience :: Information Technology",
-  "Intended Audience :: System Administrators",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: POSIX :: Linux",
-  "Operating System :: Microsoft :: Windows",
-  "Operating System :: MacOS",
-  "Environment :: MacOS X",
-  "Topic :: Software Development :: Libraries :: Python Modules",
+  "License :: OSI Approved :: Apache Software License",
 ]
 
 [project.optional-dependencies]
 pyarrow = ["pyarrow>=7.0"]
 
 [project.urls]
-repository = "https://github.com/roeap/object-store-python"
-issues = "https://github.com/roeap/object-store-python/issues"
+Documentation = "https://github.com/roeap/object-store-python#readme"
+Repository = "https://github.com/roeap/object-store-python"
 
 [tool.maturin]
 bindings = "pyo3"

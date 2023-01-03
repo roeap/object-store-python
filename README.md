@@ -63,6 +63,38 @@ copied = store.get("copied")
 assert copied == data
 ```
 
+### Configuration
+
+As much as possible we aim to make access to various storage backends dependent
+only on runtime configuration.
+
+```py
+from object_store import ObjectStore
+
+storage_options = {
+    "azure_storage_account_name": "<my-account-name>",
+    "azure_client_id": "<my-client-id>",
+    "azure_client_secret": "<my-client-secret>",
+    "azure_tenant_id": "<my-tenant-id>"
+}
+
+store = ObjectStore("az://<container-name>", storage_options)
+```
+
+We can provide the same configuration via the environment.
+
+```py
+import os
+from object_store import ObjectStore
+
+os.environ["AZURE_STORAGE_ACCOUNT_NAME"] = "<my-account-name>"
+os.environ["AZURE_CLIENT_ID"] = "<my-client-id>"
+os.environ["AZURE_CLIENT_SECRET"] = "<my-client-secret>"
+os.environ["AZURE_TENANT_ID"] = "<my-tenant-id>"
+
+store = ObjectStore("az://<container-name>")
+```
+
 ### with `pyarrow`
 
 ```py

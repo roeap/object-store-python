@@ -3,14 +3,19 @@ name = "object-store-python"
 version = "0.0.7"
 edition = "2021"
 authors = ["Robert Pack <robstar.pack@gmail.com>"]
-description = "A focused, easy to use, idiomatic, high performance, object store library interacting with object stores."
+description = "A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage, Azure Storage and local files."
 
 [dependencies]
 async-trait = "0.1.57"
 bytes = "1.2.1"
 futures = "0.3"
 once_cell = "1.12.0"
-object_store = { version = "0.5.2", features = ["azure", "aws", "gcp"] }
+object_store = { version = "0.5.2", features = [
+  "azure",
+  "aws",
+  "gcp",
+  "aws_profile",
+] }
 percent-encoding = "2"
 pyo3 = { version = "0.17.1", features = [
   "extension-module",
