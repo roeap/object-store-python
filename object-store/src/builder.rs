@@ -140,22 +140,19 @@ impl ObjectStoreBuilder {
             ObjectStoreKind::Local => ObjectStoreImpl::Local(LocalFileSystem::new()),
             ObjectStoreKind::InMemory => ObjectStoreImpl::InMemory(InMemory::new()),
             ObjectStoreKind::Azure => {
-                let mut builder = AzureConfig::get_builder(&self.url, &self.options)?;
-                builder = builder
+                let builder = AzureConfig::get_builder(&self.url, &self.options)?
                     .with_client_options(self.client_options.unwrap_or_default())
                     .with_retry(self.retry_config.unwrap_or_default());
                 ObjectStoreImpl::Azrue(builder.build()?)
             }
             ObjectStoreKind::S3 => {
-                let mut builder = S3Config::get_builder(&self.url, &self.options)?;
-                builder = builder
+                let builder = S3Config::get_builder(&self.url, &self.options)?
                     .with_client_options(self.client_options.unwrap_or_default())
                     .with_retry(self.retry_config.unwrap_or_default());
                 ObjectStoreImpl::S3(builder.build()?)
             }
             ObjectStoreKind::Google => {
-                let mut builder = GoogleConfig::get_builder(&self.url, &self.options)?;
-                builder = builder
+                let builder = GoogleConfig::get_builder(&self.url, &self.options)?
                     .with_client_options(self.client_options.unwrap_or_default())
                     .with_retry(self.retry_config.unwrap_or_default());
                 ObjectStoreImpl::Gcp(builder.build()?)
