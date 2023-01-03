@@ -2,6 +2,7 @@
 
 [![CI][ci-img]][ci-link]
 [![code style: black][black-img]][black-link]
+![PyPI](https://img.shields.io/pypi/v/object-store-python)
 [![PyPI - Downloads][pypi-img]][pypi-link]
 
 Python bindings and integrations for the excellent [`object_store`][object-store] crate.
