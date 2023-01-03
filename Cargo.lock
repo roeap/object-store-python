@@ -1026,7 +1026,7 @@ dependencies = [
 [[package]]
 name = "object_store"
 version = "0.5.2"
-source = "git+https://github.com/apache/arrow-rs?rev=1889e33da31218ee2c58ad874036b17b699538b9#1889e33da31218ee2c58ad874036b17b699538b9"
+source = "git+https://github.com/roeap/arrow-rs?rev=3ab6ac8ab66ca5387c8265eacb00279253004bb9#3ab6ac8ab66ca5387c8265eacb00279253004bb9"
 dependencies = [
  "async-trait",
  "aws-config",
@@ -1036,6 +1036,7 @@ dependencies = [
  "chrono",
  "futures",
  "itertools",
+ "once_cell",
  "parking_lot",
  "percent-encoding",
  "quick-xml",

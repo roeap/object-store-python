@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use object_store::aws::AmazonS3;
-use object_store::azure::MicrosoftAzure;
-use object_store::gcp::GoogleCloudStorage;
+use object_store::aws::{AmazonS3, AmazonS3Builder};
+use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
+use object_store::gcp::{GoogleCloudStorage, GoogleCloudStorageBuilder};
 use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
 use object_store::path::Path;
@@ -13,8 +13,6 @@ use object_store::{
     RetryConfig,
 };
 use url::Url;
-
-use crate::config::{aws::S3Config, azure::AzureConfig, google::GoogleConfig};
 
 enum ObjectStoreKind {
     Local,
@@ -136,26 +134,65 @@ impl ObjectStoreBuilder {
             store: "Generic",
             source: Box::new(err),
         })?;
-        let root_store = match ObjectStoreKind::parse_url(&url).unwrap() {
+        let root_store = match ObjectStoreKind::parse_url(&url)? {
             ObjectStoreKind::Local => ObjectStoreImpl::Local(LocalFileSystem::new()),
             ObjectStoreKind::InMemory => ObjectStoreImpl::InMemory(InMemory::new()),
             ObjectStoreKind::Azure => {
-                let builder = AzureConfig::get_builder(&self.url, &self.options)?
-                    .with_client_options(self.client_options.unwrap_or_default())
-                    .with_retry(self.retry_config.unwrap_or_default());
-                ObjectStoreImpl::Azrue(builder.build()?)
+                let maybe_store = MicrosoftAzureBuilder::new()
+                    .with_url(url.clone())
+                    .with_options(&self.options)
+                    .with_client_options(self.client_options.clone().unwrap_or_default())
+                    .with_retry(self.retry_config.clone().unwrap_or_default())
+                    .build();
+                if let Ok(store) = maybe_store {
+                    ObjectStoreImpl::Azrue(store)
+                } else {
+                    let store = MicrosoftAzureBuilder::from_env()
+                        .with_url(url.clone())
+                        .with_options(&self.options)
+                        .with_client_options(self.client_options.unwrap_or_default())
+                        .with_retry(self.retry_config.unwrap_or_default())
+                        .build()?;
+                    ObjectStoreImpl::Azrue(store)
+                }
             }
             ObjectStoreKind::S3 => {
-                let builder = S3Config::get_builder(&self.url, &self.options)?
-                    .with_client_options(self.client_options.unwrap_or_default())
-                    .with_retry(self.retry_config.unwrap_or_default());
-                ObjectStoreImpl::S3(builder.build()?)
+                let maybe_store = AmazonS3Builder::new()
+                    .with_url(url.clone())
+                    .with_options(&self.options)
+                    .with_client_options(self.client_options.clone().unwrap_or_default())
+                    .with_retry(self.retry_config.clone().unwrap_or_default())
+                    .build();
+                if let Ok(store) = maybe_store {
+                    ObjectStoreImpl::S3(store)
+                } else {
+                    let store = AmazonS3Builder::from_env()
+                        .with_url(url.clone())
+                        .with_options(&self.options)
+                        .with_client_options(self.client_options.unwrap_or_default())
+                        .with_retry(self.retry_config.unwrap_or_default())
+                        .build()?;
+                    ObjectStoreImpl::S3(store)
+                }
             }
             ObjectStoreKind::Google => {
-                let builder = GoogleConfig::get_builder(&self.url, &self.options)?
-                    .with_client_options(self.client_options.unwrap_or_default())
-                    .with_retry(self.retry_config.unwrap_or_default());
-                ObjectStoreImpl::Gcp(builder.build()?)
+                let maybe_store = GoogleCloudStorageBuilder::new()
+                    .with_url(url.clone())
+                    .with_options(&self.options)
+                    .with_client_options(self.client_options.clone().unwrap_or_default())
+                    .with_retry(self.retry_config.clone().unwrap_or_default())
+                    .build();
+                if let Ok(store) = maybe_store {
+                    ObjectStoreImpl::Gcp(store)
+                } else {
+                    let store = GoogleCloudStorageBuilder::from_env()
+                        .with_url(url.clone())
+                        .with_options(&self.options)
+                        .with_client_options(self.client_options.unwrap_or_default())
+                        .with_retry(self.retry_config.unwrap_or_default())
+                        .build()?;
+                    ObjectStoreImpl::Gcp(store)
+                }
             }
         };
 
