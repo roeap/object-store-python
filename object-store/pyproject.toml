@@ -5,6 +5,7 @@ build-backend = "maturin"
 [project]
 name = "object-store-python"
 version = "0.0.7"
+description = "A focused, easy to use, idiomatic, high performance, object store library interacting with object stores."
 requires-python = ">=3.8"
 readme = "README.md"
 keywords = ["object-store", "azure", "aws", "gcp"]

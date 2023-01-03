@@ -3,6 +3,7 @@ name = "object-store-python"
 version = "0.0.7"
 edition = "2021"
 authors = ["Robert Pack <robstar.pack@gmail.com>"]
+description = "A focused, easy to use, idiomatic, high performance, object store library interacting with object stores."
 
 [dependencies]
 async-trait = "0.1.57"
