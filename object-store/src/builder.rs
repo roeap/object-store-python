@@ -99,8 +99,12 @@ impl ObjectStoreBuilder {
         }
     }
 
-    pub fn with_options(mut self, options: HashMap<String, String>) -> Self {
-        self.options = options;
+    pub fn with_options<I: IntoIterator<Item = (impl Into<String>, impl Into<String>)>>(
+        mut self,
+        options: I,
+    ) -> Self {
+        self.options
+            .extend(options.into_iter().map(|(k, v)| (k.into(), v.into())));
         self
     }
 
@@ -158,7 +162,7 @@ impl ObjectStoreBuilder {
             ObjectStoreKind::Azure => {
                 let maybe_store = MicrosoftAzureBuilder::new()
                     .with_url(url.clone())
-                    .with_options(&self.options)
+                    .try_with_options(&self.options)?
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build();
@@ -167,7 +171,7 @@ impl ObjectStoreBuilder {
                 } else {
                     let store = MicrosoftAzureBuilder::from_env()
                         .with_url(url.clone())
-                        .with_options(&self.options)
+                        .try_with_options(&self.options)?
                         .with_client_options(self.client_options.unwrap_or_default())
                         .with_retry(self.retry_config.unwrap_or_default())
                         .build()?;
@@ -177,7 +181,7 @@ impl ObjectStoreBuilder {
             ObjectStoreKind::S3 => {
                 let maybe_store = AmazonS3Builder::new()
                     .with_url(url.clone())
-                    .with_options(&self.options)
+                    .try_with_options(&self.options)?
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build();
@@ -186,7 +190,7 @@ impl ObjectStoreBuilder {
                 } else {
                     let store = AmazonS3Builder::from_env()
                         .with_url(url.clone())
-                        .with_options(&self.options)
+                        .try_with_options(&self.options)?
                         .with_client_options(self.client_options.unwrap_or_default())
                         .with_retry(self.retry_config.unwrap_or_default())
                         .build()?;
@@ -196,7 +200,7 @@ impl ObjectStoreBuilder {
             ObjectStoreKind::Google => {
                 let maybe_store = GoogleCloudStorageBuilder::new()
                     .with_url(url.clone())
-                    .with_options(&self.options)
+                    .try_with_options(&self.options)?
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build();
@@ -205,7 +209,7 @@ impl ObjectStoreBuilder {
                 } else {
                     let store = GoogleCloudStorageBuilder::from_env()
                         .with_url(url.clone())
-                        .with_options(&self.options)
+                        .try_with_options(&self.options)?
                         .with_client_options(self.client_options.unwrap_or_default())
                         .with_retry(self.retry_config.unwrap_or_default())
                         .build()?;

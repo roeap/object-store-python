@@ -2,4 +2,4 @@
 members = ["object-store"]
 
 [patch.crates-io]
-object_store = { git = "https://github.com/roeap/arrow-rs", rev = "3ab6ac8ab66ca5387c8265eacb00279253004bb9" }
+object_store = { git = "https://github.com/roeap/arrow-rs", rev = "7dea6c8ee68dbda781ee613e537f2a65891ed322" }
