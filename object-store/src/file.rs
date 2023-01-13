@@ -396,15 +396,14 @@ impl ObjectInputFile {
         };
         let nbytes = (range.end - range.start) as i64;
         self.pos += nbytes;
-        let obj = if nbytes > 0 {
+        let data = if nbytes > 0 {
             self.rt
                 .block_on(self.store.get_range(&self.path, range))
                 .map_err(ObjectStoreError::from)?
-                .to_vec()
         } else {
-            Vec::new()
+            "".into()
         };
-        Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
+        Python::with_gil(|py| Ok(PyBytes::new(py, data.as_ref()).into_py(py)))
     }
 
     fn fileno(&self) -> PyResult<()> {
@@ -525,10 +524,10 @@ impl ObjectOutputStream {
         Err(PyNotImplementedError::new_err("'read' not implemented"))
     }
 
-    fn write(&mut self, data: Vec<u8>) -> PyResult<i64> {
+    fn write(&mut self, data: &PyBytes) -> PyResult<i64> {
         self.check_closed()?;
-        let len = data.len() as i64;
-        match self.rt.block_on(self.writer.write_all(&data)) {
+        let len = data.as_bytes().len() as i64;
+        match self.rt.block_on(self.writer.write_all(data.as_bytes())) {
             Ok(_) => Ok(len),
             Err(err) => {
                 self.rt
