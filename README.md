@@ -67,7 +67,9 @@ assert copied == data
 ### Configuration
 
 As much as possible we aim to make access to various storage backends dependent
-only on runtime configuration.
+only on runtime configuration. The kind of service is always derived from the
+url used to specifiy the storage location. Some basic configuration can also be
+derived from the url string, dependent on the chosen url format.
 
 ```py
 from object_store import ObjectStore
@@ -95,6 +97,57 @@ os.environ["AZURE_TENANT_ID"] = "<my-tenant-id>"
 
 store = ObjectStore("az://<container-name>")
 ```
+
+#### Azure
+
+The recommended url format is `az://<container>/<path>` and Azure always requieres
+`azure_storage_account_name` to be configured.
+
+- master key
+  - `azure_storage_account_key`
+- service principal
+  - `azure_client_id`
+  - `azure_client_secret`
+  - `azure_tenant_id`
+- shared access signature
+  - `azure_storage_sas_key` (as provided by StorageExplorer)
+- bearer token
+  - `azure_storage_token`
+- managed identity (with user assigned identity)
+  - if using user assigned identity one of `azure_client_id`, `azure_object_id`, `azure_msi_resource_id`
+  - `use_managed_identity`
+- workload identity
+  - `azure_client_id`
+  - `azure_tenant_id`
+  - `azure_federated_token_file`
+
+#### S3
+
+The recommended url format is `s3://<bucket>/<path>` S3 storage always requires a
+region to be specified via one of `aws_region` or `aws_default_region`.
+
+- access key
+  - `aws_access_key_id`
+  - `aws_secret_access_key`
+- session token
+  - `aws_session_token`
+- imds instance metadata
+  - `aws_metadata_endpoint`
+- profile
+  - `aws_profile`
+
+AWS supports [virtual hosting of buckets][aws-virtual], which can be configured by setting
+`aws_virtual_hosted_style_request` to "true".
+
+When an alternative implementation or a mocked service like localstack is used, the service
+endpoint needs to be explicitly specified via `aws_endpoint`.
+
+#### GCS
+
+The recommended url format is `gs://<bucket>/<path>`.
+
+- service account
+  - `google_service_account`
 
 ### with `pyarrow`
 
@@ -154,3 +207,4 @@ just test
 [ci-link]: https://github.com/roeap/object-store-python/actions/workflows/ci.yaml
 [black-img]: https://img.shields.io/badge/code%20style-black-000000.svg
 [black-link]: https://github.com/psf/black
+[aws-virtual]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html

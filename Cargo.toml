@@ -1,2 +1,10 @@
 [workspace]
 members = ["object-store"]
+
+[patch.crates-io]
+object_store = { git = "https://github.com/roeap/arrow-rs/", rev = "6b7b34e7953a8aabd4d1b7cb068e3d61e27aed4a", features = [
+  "azure",
+  "aws",
+  "gcp",
+  "aws_profile",
+] }
