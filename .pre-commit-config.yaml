@@ -17,7 +17,7 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.209"
+    rev: "v0.0.230"
     hooks:
       - id: ruff
         args: ["--config", "pyproject.toml"]
@@ -48,7 +48,7 @@ repos:
       - id: poetry-check
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.286
+    rev: v1.1.290
     hooks:
       - id: pyright
 
