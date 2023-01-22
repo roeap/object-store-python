@@ -103,20 +103,20 @@ store = ObjectStore("az://<container-name>")
 The recommended url format is `az://<container>/<path>` and Azure always requieres
 `azure_storage_account_name` to be configured.
 
-- master key
+- [shared key][azure-key]
   - `azure_storage_account_key`
-- service principal
+- [service principal][azure-ad]
   - `azure_client_id`
   - `azure_client_secret`
   - `azure_tenant_id`
-- shared access signature
+- [shared access signature][azure-sas]
   - `azure_storage_sas_key` (as provided by StorageExplorer)
 - bearer token
   - `azure_storage_token`
-- managed identity (with user assigned identity)
+- [managed identity][azure-managed]
   - if using user assigned identity one of `azure_client_id`, `azure_object_id`, `azure_msi_resource_id`
   - `use_managed_identity`
-- workload identity
+- [workload identity][azure-workload]
   - `azure_client_id`
   - `azure_tenant_id`
   - `azure_federated_token_file`
@@ -126,14 +126,14 @@ The recommended url format is `az://<container>/<path>` and Azure always requier
 The recommended url format is `s3://<bucket>/<path>` S3 storage always requires a
 region to be specified via one of `aws_region` or `aws_default_region`.
 
-- access key
+- [access key][aws-key]
   - `aws_access_key_id`
   - `aws_secret_access_key`
-- session token
+- [session token][aws-sts]
   - `aws_session_token`
-- imds instance metadata
+- [imds instance metadata][aws-imds]
   - `aws_metadata_endpoint`
-- profile
+- [profile][aws-profile]
   - `aws_profile`
 
 AWS supports [virtual hosting of buckets][aws-virtual], which can be configured by setting
@@ -208,3 +208,12 @@ just test
 [black-img]: https://img.shields.io/badge/code%20style-black-000000.svg
 [black-link]: https://github.com/psf/black
 [aws-virtual]: https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+[azure-managed]: https://learn.microsoft.com/en-gb/azure/app-service/overview-managed-identity
+[azure-sas]: https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview
+[azure-ad]: https://learn.microsoft.com/en-us/azure/storage/blobs/authorize-access-azure-active-directory
+[azure-key]: https://learn.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key
+[azure-workload]: https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview
+[aws-imds]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html
+[aws-profile]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html
+[aws-sts]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html
+[aws-key]: https://docs.aws.amazon.com/accounts/latest/reference/credentials-access-keys-best-practices.html
