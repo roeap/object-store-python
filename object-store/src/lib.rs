@@ -226,7 +226,7 @@ struct PyObjectStore {
 #[pymethods]
 impl PyObjectStore {
     #[new]
-    #[args(options = "None")]
+    #[pyo3(signature = (root, options = None))]
     /// Create a new ObjectStore instance
     fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
         let inner = ObjectStoreBuilder::new(root.clone())
