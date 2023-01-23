@@ -115,7 +115,7 @@ The recommended url format is `az://<container>/<path>` and Azure always requier
   - `azure_storage_token`
 - [managed identity][azure-managed]
   - if using user assigned identity one of `azure_client_id`, `azure_object_id`, `azure_msi_resource_id`
-  - `use_managed_identity`
+  - if no other credential can be created, managed identity will be tried
 - [workload identity][azure-workload]
   - `azure_client_id`
   - `azure_tenant_id`

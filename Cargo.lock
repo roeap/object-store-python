@@ -1026,7 +1026,7 @@ dependencies = [
 [[package]]
 name = "object_store"
 version = "0.5.3"
-source = "git+https://github.com/roeap/arrow-rs/?rev=6b7b34e7953a8aabd4d1b7cb068e3d61e27aed4a#6b7b34e7953a8aabd4d1b7cb068e3d61e27aed4a"
+source = "git+https://github.com/roeap/arrow-rs/?rev=70fca1a61c688b9f58a08c97ed736d755a7da52d#70fca1a61c688b9f58a08c97ed736d755a7da52d"
 dependencies = [
  "async-trait",
  "aws-config",
