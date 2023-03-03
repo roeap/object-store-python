@@ -55,7 +55,7 @@ exclude = [
 ]
 ignore = ['E501']
 line-length = 120
-select = ['B', 'C', 'E', 'F', "I", "S", 'W']
+select = ['B', 'C4', 'E', 'F', "I", "S", 'W']
 
 [tool.ruff.per-file-ignores]
 # allow asserts in test files (bandit)
