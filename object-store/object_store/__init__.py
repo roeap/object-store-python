@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from io import BytesIO
-from typing import List
+from typing import List, Optional, Union
 
 # NOTE aliasing the imports with 'as' makes them public in the eyes
 # of static code checkers. Thus we avoid listing them with __all__ = ...
@@ -13,12 +11,12 @@ from ._internal import Path as Path
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
-    import importlib_metadata
+    import importlib_metadata  # type: ignore
 
 __version__ = importlib_metadata.version("object-store-python")
 
-PathLike = str | List[str] | Path
-BytesLike = bytes | BytesIO
+PathLike = Union[str, List[str], Path]
+BytesLike = Union[bytes, BytesIO]
 
 DELIMITER = "/"
 
@@ -98,7 +96,7 @@ class ObjectStore(_ObjectStore):
         """
         return super().delete(_as_path(location))
 
-    def list(self, prefix: PathLike | None = None) -> list[ObjectMeta]:
+    def list(self, prefix: Optional[PathLike] = None) -> list[ObjectMeta]:
         """List all the objects with the given prefix.
 
         Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
@@ -113,7 +111,7 @@ class ObjectStore(_ObjectStore):
         prefix_ = _as_path(prefix) if prefix else None
         return super().list(prefix_)
 
-    def list_with_delimiter(self, prefix: PathLike | None = None) -> ListResult:
+    def list_with_delimiter(self, prefix: Optional[PathLike] = None) -> ListResult:
         """List objects with the given prefix and an implementation specific
         delimiter. Returns common prefixes (directories) in addition to object
         metadata.
