@@ -96,7 +96,7 @@ class ObjectStore(_ObjectStore):
         """
         return super().delete(_as_path(location))
 
-    def list(self, prefix: Optional[PathLike] = None) -> list[ObjectMeta]:
+    def list(self, prefix: Optional[PathLike] = None) -> List[ObjectMeta]:
         """List all the objects with the given prefix.
 
         Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
