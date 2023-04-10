@@ -32,10 +32,103 @@ class ListResult:
     def objects(self) -> list[ObjectMeta]:
         """Object metadata for the listing"""
 
+class ClientOptions:
+    """HTTP client configuration for remote object stores"""
+
+    @property
+    def user_agent(self) -> str | None:
+        """Sets the User-Agent header to be used by this client
+
+        Default is based on the version of this crate
+        """
+    @property
+    def default_content_type(self) -> str | None:
+        """Set the default CONTENT_TYPE for uploads"""
+    @property
+    def proxy_url(self) -> str | None:
+        """Set an HTTP proxy to use for requests"""
+    @property
+    def allow_http(self) -> bool:
+        """Sets what protocol is allowed.
+
+        If `allow_http` is :
+          * false (default):  Only HTTPS ise allowed
+          * true:  HTTP and HTTPS are allowed
+        """
+    @property
+    def allow_insecure(self) -> bool:
+        """Allows connections to invalid SSL certificates
+        * false (default):  Only valid HTTPS certificates are allowed
+        * true:  All HTTPS certificates are allowed
+
+        # Warning
+
+        You should think very carefully before using this method. If
+        invalid certificates are trusted, *any* certificate for *any* site
+        will be trusted for use. This includes expired certificates. This
+        introduces significant vulnerabilities, and should only be used
+        as a last resort or for testing.
+        """
+    @property
+    def timeout(self) -> int:
+        """Set a request timeout (seconds)
+
+        The timeout is applied from when the request starts connecting until the
+        response body has finished
+        """
+    @property
+    def connect_timeout(self) -> int:
+        """Set a timeout (seconds) for only the connect phase of a Client"""
+    @property
+    def pool_idle_timeout(self) -> int:
+        """Set the pool max idle timeout (seconds)
+
+        This is the length of time an idle connection will be kept alive
+
+        Default is 90 seconds
+        """
+    @property
+    def pool_max_idle_per_host(self) -> int:
+        """Set the maximum number of idle connections per host
+
+        Default is no limit"""
+    @property
+    def http2_keep_alive_interval(self) -> int:
+        """Sets an interval for HTTP2 Ping frames should be sent to keep a connection alive.
+
+        Default is disabled
+        """
+    @property
+    def http2_keep_alive_timeout(self) -> int:
+        """Sets a timeout for receiving an acknowledgement of the keep-alive ping.
+
+        If the ping is not acknowledged within the timeout, the connection will be closed.
+        Does nothing if http2_keep_alive_interval is disabled.
+
+        Default is disabled
+        """
+    @property
+    def http2_keep_alive_while_idle(self) -> bool:
+        """Enable HTTP2 keep alive pings for idle connections
+
+        If disabled, keep-alive pings are only sent while there are open request/response
+        streams. If enabled, pings are also sent when no streams are active
+
+        Default is disabled
+        """
+    @property
+    def http1_only(self) -> bool:
+        """Only use http1 connections"""
+    @property
+    def http2_only(self) -> bool:
+        """Only use http2 connections"""
+
 class ObjectStore:
     """A uniform API for interacting with object storage services and local files."""
 
-    def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
+    def __init__(
+        self, root: str, options: dict[str, str] | None = None, client_options: ClientOptions | None = None
+    ) -> None: ...
     def get(self, location: Path) -> bytes:
         """Return the bytes that are stored at the specified location."""
     def get_range(self, location: Path, start: int, length: int) -> bytes:
@@ -115,7 +208,9 @@ class ObjectOutputStream:
 class ArrowFileSystemHandler:
     """Implementation of pyarrow.fs.FileSystemHandler for use with pyarrow.fs.PyFileSystem"""
 
-    def __init__(self, root: str, options: dict[str, str] | None = None) -> None: ...
+    def __init__(
+        self, root: str, options: dict[str, str] | None = None, client_options: ClientOptions | None = None
+    ) -> None: ...
     def copy_file(self, src: str, dst: str) -> None:
         """Copy a file.
 

@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 # NOTE aliasing the imports with 'as' makes them public in the eyes
 # of static code checkers. Thus we avoid listing them with __all__ = ...
+from ._internal import ClientOptions as ClientOptions
 from ._internal import ListResult as ListResult
 from ._internal import ObjectMeta as ObjectMeta
 from ._internal import ObjectStore as _ObjectStore

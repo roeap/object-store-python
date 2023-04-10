@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::builder::ObjectStoreBuilder;
 use crate::utils::{delete_dir, walk_tree};
-use crate::ObjectStoreError;
+use crate::{ObjectStoreError, PyClientOptions};
 
 use object_store::path::Path;
 use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, MultipartId};
@@ -25,11 +25,18 @@ pub struct ArrowFileSystemHandler {
 #[pymethods]
 impl ArrowFileSystemHandler {
     #[new]
-    #[pyo3(signature = (root, options = None))]
-    fn new(root: String, options: Option<HashMap<String, String>>) -> PyResult<Self> {
+    #[pyo3(signature = (root, options = None, client_options = None))]
+    fn new(
+        root: String,
+        options: Option<HashMap<String, String>>,
+        client_options: Option<PyClientOptions>,
+    ) -> PyResult<Self> {
+        let client_options = client_options.unwrap_or_default();
         let inner = ObjectStoreBuilder::new(root.clone())
             .with_path_as_prefix(true)
             .with_options(options.clone().unwrap_or_default())
+            .with_client_options(client_options.client_options()?)
+            .with_retry_config(client_options.retry_config()?)
             .build()
             .map_err(ObjectStoreError::from)?;
         Ok(Self {
