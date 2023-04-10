@@ -7,7 +7,7 @@ use object_store::gcp::{GoogleCloudStorage, GoogleCloudStorageBuilder};
 use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
 use object_store::path::Path;
-use object_store::prefix::PrefixObjectStore;
+use object_store::prefix::PrefixStore;
 use object_store::{
     ClientOptions, DynObjectStore, Error as ObjectStoreError, Result as ObjectStoreResult,
     RetryConfig,
@@ -58,11 +58,11 @@ enum ObjectStoreImpl {
 impl ObjectStoreImpl {
     pub fn into_prefix(self, prefix: Path) -> Arc<DynObjectStore> {
         match self {
-            ObjectStoreImpl::Local(store) => Arc::new(PrefixObjectStore::new(store, prefix)),
-            ObjectStoreImpl::InMemory(store) => Arc::new(PrefixObjectStore::new(store, prefix)),
-            ObjectStoreImpl::Azrue(store) => Arc::new(PrefixObjectStore::new(store, prefix)),
-            ObjectStoreImpl::S3(store) => Arc::new(PrefixObjectStore::new(store, prefix)),
-            ObjectStoreImpl::Gcp(store) => Arc::new(PrefixObjectStore::new(store, prefix)),
+            ObjectStoreImpl::Local(store) => Arc::new(PrefixStore::new(store, prefix)),
+            ObjectStoreImpl::InMemory(store) => Arc::new(PrefixStore::new(store, prefix)),
+            ObjectStoreImpl::Azrue(store) => Arc::new(PrefixStore::new(store, prefix)),
+            ObjectStoreImpl::S3(store) => Arc::new(PrefixStore::new(store, prefix)),
+            ObjectStoreImpl::Gcp(store) => Arc::new(PrefixStore::new(store, prefix)),
         }
     }
 
