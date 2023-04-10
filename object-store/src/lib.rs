@@ -326,8 +326,10 @@ impl PyClientOptions {
         if let Some(backoff_base) = self.retry_backoff_base {
             backoff.base = backoff_base;
         }
-        let mut config = RetryConfig::default();
-        config.backoff = backoff;
+        let mut config = RetryConfig {
+            backoff,
+            ..Default::default()
+        };
         if let Some(max_retries) = self.retry_max_retries {
             config.max_retries = max_retries;
         }
@@ -418,6 +420,7 @@ impl PyClientOptions {
         retry_timeout = None,
     ))]
     /// Create a new ObjectStore instance
+    #[allow(clippy::too_many_arguments)]
     fn new(
         user_agent: Option<String>,
         content_type_map: Option<HashMap<String, String>>,
