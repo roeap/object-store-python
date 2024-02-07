@@ -23,7 +23,7 @@ fix:
 
 # run object-store python tests
 test-py:
-    pytest object-store/ --benchmark-autosave --cov
+    poetry run pytest object-store/ --benchmark-autosave --cov
 
 # run object-store rust tests
 test-rs:
