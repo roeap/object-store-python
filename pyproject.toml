@@ -20,7 +20,8 @@ pytest = "^7.1.3"
 pytest-datadir = ">=1.3.1"
 ipykernel = ">=6.15.2"
 pytest-cov = "^4.0.0"
-ruff = ">=0.0.230"
+# pinned to match .pre-commit-config.yaml
+ruff = "0.2.1"
 pytest-benchmark = "^4.0.0"
 
 [tool.poetry.group.examples.dependencies]
@@ -53,15 +54,17 @@ exclude = [
   'typestubs',
   '*.pyi',
 ]
-ignore = ['E501']
 line-length = 120
+
+[tool.ruff.lint]
+ignore = ['E501']
 select = ['B', 'C4', 'E', 'F', "I", "S", 'W']
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # allow asserts in test files (bandit)
 "test_*" = ["S101"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["object_store"]
 
 [tool.pyright]

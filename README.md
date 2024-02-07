@@ -183,7 +183,7 @@ dataset = ds.dataset("data", format="parquet", filesystem=store)
 
 ### Running tests
 
-If you do not have [`just`](<(https://github.com/casey/just#readme)>) installed and do not wish to install it,
+If you do not have [`just`](https://github.com/casey/just#readme) installed and do not wish to install it,
 have a look at the [`justfile`](https://github.com/roeap/object-store-python/blob/main/justfile) to see the raw commands.
 
 To set up the development environment, and install a dev version of the native package just run:
