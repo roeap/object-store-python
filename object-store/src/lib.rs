@@ -514,6 +514,24 @@ impl PyObjectStore {
         Ok(())
     }
 
+    /// Save the provided bytes to the specified location.
+    #[pyo3(text_signature = "($self, location, bytes)")]
+    fn put_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        location: PyPath,
+        bytes: Vec<u8>,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .put(&location.into(), bytes.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
+    }
+
     /// Return the bytes that are stored at the specified location.
     #[pyo3(text_signature = "($self, location)")]
     fn get(&self, location: PyPath) -> PyResult<Py<PyBytes>> {
@@ -522,6 +540,18 @@ impl PyObjectStore {
             .block_on(get_bytes(self.inner.as_ref(), &location.into()))
             .map_err(ObjectStoreError::from)?;
         Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
+    }
+
+    /// Return the bytes that are stored at the specified location.
+    #[pyo3(text_signature = "($self, location)")]
+    fn get_async<'a>(&'a self, py: Python<'a>, location: PyPath) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let bytes = get_bytes(inner.as_ref(), &location.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(bytes)
+        })
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
@@ -539,6 +569,31 @@ impl PyObjectStore {
         Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
     }
 
+    /// Return the bytes that are stored at the specified location in the given byte range
+    #[pyo3(text_signature = "($self, location)")]
+    fn get_range_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        location: PyPath,
+        start: usize,
+        length: usize,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        let range = std::ops::Range {
+            start,
+            end: start + length,
+        };
+
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let bytes = inner
+                .get_range(&location.into(), range)
+                .await
+                .map_err(ObjectStoreError::from)?
+                .to_vec();
+            Ok(bytes)
+        })
+    }
+
     /// Return the metadata for the specified location
     #[pyo3(text_signature = "($self, location)")]
     fn head(&self, location: PyPath) -> PyResult<PyObjectMeta> {
@@ -549,6 +604,19 @@ impl PyObjectStore {
         Ok(meta.into())
     }
 
+    /// Return the metadata for the specified location
+    #[pyo3(text_signature = "($self, location)")]
+    fn head_async<'a>(&'a self, py: Python<'a>, location: PyPath) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let meta = inner
+                .head(&location.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(PyObjectMeta::from(meta))
+        })
+    }
+
     /// Delete the object at the specified location.
     #[pyo3(text_signature = "($self, location)")]
     fn delete(&self, location: PyPath) -> PyResult<()> {
@@ -556,6 +624,19 @@ impl PyObjectStore {
             .block_on(self.inner.delete(&location.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
+    }
+
+    /// Delete the object at the specified location.
+    #[pyo3(text_signature = "($self, location)")]
+    fn delete_async<'a>(&'a self, py: Python<'a>, location: PyPath) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .delete(&location.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
     }
 
     /// List all the objects with the given prefix.
@@ -576,6 +657,25 @@ impl PyObjectStore {
             .collect())
     }
 
+    /// List all the objects with the given prefix.
+    ///
+    /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
+    /// of `foo/bar/x` but not of `foo/bar_baz/x`.
+    #[pyo3(text_signature = "($self, prefix)")]
+    fn list_async<'a>(&'a self, py: Python<'a>, prefix: Option<PyPath>) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let object_metas = flatten_list_stream(inner.as_ref(), prefix.map(Path::from).as_ref())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            let py_object_metas = object_metas
+                .into_iter()
+                .map(PyObjectMeta::from)
+                .collect::<Vec<_>>();
+            Ok(py_object_metas)
+        })
+    }
+
     /// List objects with the given prefix and an implementation specific
     /// delimiter. Returns common prefixes (directories) in addition to object
     /// metadata.
@@ -594,6 +694,28 @@ impl PyObjectStore {
         Ok(list.into())
     }
 
+    /// List objects with the given prefix and an implementation specific
+    /// delimiter. Returns common prefixes (directories) in addition to object
+    /// metadata.
+    ///
+    /// Prefixes are evaluated on a path segment basis, i.e. `foo/bar/` is a prefix
+    /// of `foo/bar/x` but not of `foo/bar_baz/x`.
+    #[pyo3(text_signature = "($self, prefix)")]
+    fn list_with_delimiter_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        prefix: Option<PyPath>,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let list_result = inner
+                .list_with_delimiter(prefix.map(Path::from).as_ref())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(PyListResult::from(list_result))
+        })
+    }
+
     /// Copy an object from one path to another in the same object store.
     ///
     /// If there exists an object at the destination, it will be overwritten.
@@ -605,6 +727,21 @@ impl PyObjectStore {
         Ok(())
     }
 
+    /// Copy an object from one path to another in the same object store.
+    ///
+    /// If there exists an object at the destination, it will be overwritten.
+    #[pyo3(text_signature = "($self, from, to)")]
+    fn copy_async<'a>(&'a self, py: Python<'a>, from: PyPath, to: PyPath) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .copy(&from.into(), &to.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
+    }
+
     /// Copy an object from one path to another, only if destination is empty.
     ///
     /// Will return an error if the destination already has an object.
@@ -614,6 +751,26 @@ impl PyObjectStore {
             .block_on(self.inner.copy_if_not_exists(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
+    }
+
+    /// Copy an object from one path to another, only if destination is empty.
+    ///
+    /// Will return an error if the destination already has an object.
+    #[pyo3(text_signature = "($self, from, to)")]
+    fn copy_if_not_exists_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        from: PyPath,
+        to: PyPath,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .copy_if_not_exists(&from.into(), &to.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
     }
 
     /// Move an object from one path to another in the same object store.
@@ -632,6 +789,24 @@ impl PyObjectStore {
 
     /// Move an object from one path to another in the same object store.
     ///
+    /// By default, this is implemented as a copy and then delete source. It may not
+    /// check when deleting source that it was the same object that was originally copied.
+    ///
+    /// If there exists an object at the destination, it will be overwritten.
+    #[pyo3(text_signature = "($self, from, to)")]
+    fn rename_async<'a>(&'a self, py: Python<'a>, from: PyPath, to: PyPath) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .rename(&from.into(), &to.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
+    }
+
+    /// Move an object from one path to another in the same object store.
+    ///
     /// Will return an error if the destination already has an object.
     #[pyo3(text_signature = "($self, from, to)")]
     fn rename_if_not_exists(&self, from: PyPath, to: PyPath) -> PyResult<()> {
@@ -639,6 +814,26 @@ impl PyObjectStore {
             .block_on(self.inner.rename_if_not_exists(&from.into(), &to.into()))
             .map_err(ObjectStoreError::from)?;
         Ok(())
+    }
+
+    /// Move an object from one path to another in the same object store.
+    ///
+    /// Will return an error if the destination already has an object.
+    #[pyo3(text_signature = "($self, from, to)")]
+    fn rename_if_not_exists_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        from: PyPath,
+        to: PyPath,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            inner
+                .rename_if_not_exists(&from.into(), &to.into())
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(())
+        })
     }
 
     pub fn __getnewargs__(&self) -> PyResult<(String, Option<HashMap<String, String>>)> {
