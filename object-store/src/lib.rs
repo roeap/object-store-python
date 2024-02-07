@@ -2,6 +2,7 @@ mod builder;
 mod file;
 mod utils;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
@@ -19,7 +20,7 @@ use pyo3::exceptions::{
     PyException, PyFileExistsError, PyFileNotFoundError, PyNotImplementedError,
 };
 use pyo3::prelude::*;
-use pyo3::{types::PyBytes, PyErr};
+use pyo3::PyErr;
 use tokio::runtime::Runtime;
 
 pub use builder::ObjectStoreBuilder;
@@ -534,12 +535,12 @@ impl PyObjectStore {
 
     /// Return the bytes that are stored at the specified location.
     #[pyo3(text_signature = "($self, location)")]
-    fn get(&self, location: PyPath) -> PyResult<Py<PyBytes>> {
+    fn get(&self, location: PyPath) -> PyResult<Cow<[u8]>> {
         let obj = self
             .rt
             .block_on(get_bytes(self.inner.as_ref(), &location.into()))
             .map_err(ObjectStoreError::from)?;
-        Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
+        Ok(Cow::Owned(obj.to_vec()))
     }
 
     /// Return the bytes that are stored at the specified location.
@@ -547,16 +548,16 @@ impl PyObjectStore {
     fn get_async<'a>(&'a self, py: Python<'a>, location: PyPath) -> PyResult<&PyAny> {
         let inner = self.inner.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let bytes = get_bytes(inner.as_ref(), &location.into())
+            let obj = get_bytes(inner.as_ref(), &location.into())
                 .await
                 .map_err(ObjectStoreError::from)?;
-            Ok(bytes)
+            Ok(Cow::<[u8]>::Owned(obj.to_vec()))
         })
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
     #[pyo3(text_signature = "($self, location, start, length)")]
-    fn get_range(&self, location: PyPath, start: usize, length: usize) -> PyResult<Py<PyBytes>> {
+    fn get_range(&self, location: PyPath, start: usize, length: usize) -> PyResult<Cow<[u8]>> {
         let range = std::ops::Range {
             start,
             end: start + length,
@@ -564,9 +565,8 @@ impl PyObjectStore {
         let obj = self
             .rt
             .block_on(self.inner.get_range(&location.into(), range))
-            .map_err(ObjectStoreError::from)?
-            .to_vec();
-        Python::with_gil(|py| Ok(PyBytes::new(py, &obj).into_py(py)))
+            .map_err(ObjectStoreError::from)?;
+        Ok(Cow::Owned(obj.to_vec()))
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
@@ -585,12 +585,11 @@ impl PyObjectStore {
         };
 
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let bytes = inner
+            let obj = inner
                 .get_range(&location.into(), range)
                 .await
-                .map_err(ObjectStoreError::from)?
-                .to_vec();
-            Ok(bytes)
+                .map_err(ObjectStoreError::from)?;
+            Ok(Cow::<[u8]>::Owned(obj.to_vec()))
         })
     }
 
