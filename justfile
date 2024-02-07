@@ -34,4 +34,4 @@ test: test-rs test-py
 
 # serve the documentation
 serve:
-    mkdocs serve
+    poetry run mkdocs serve
