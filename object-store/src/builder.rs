@@ -50,7 +50,7 @@ impl ObjectStoreKind {
 enum ObjectStoreImpl {
     Local(LocalFileSystem),
     InMemory(InMemory),
-    Azrue(MicrosoftAzure),
+    Azure(MicrosoftAzure),
     S3(AmazonS3),
     Gcp(GoogleCloudStorage),
 }
@@ -60,7 +60,7 @@ impl ObjectStoreImpl {
         match self {
             ObjectStoreImpl::Local(store) => Arc::new(PrefixStore::new(store, prefix)),
             ObjectStoreImpl::InMemory(store) => Arc::new(PrefixStore::new(store, prefix)),
-            ObjectStoreImpl::Azrue(store) => Arc::new(PrefixStore::new(store, prefix)),
+            ObjectStoreImpl::Azure(store) => Arc::new(PrefixStore::new(store, prefix)),
             ObjectStoreImpl::S3(store) => Arc::new(PrefixStore::new(store, prefix)),
             ObjectStoreImpl::Gcp(store) => Arc::new(PrefixStore::new(store, prefix)),
         }
@@ -70,7 +70,7 @@ impl ObjectStoreImpl {
         match self {
             ObjectStoreImpl::Local(store) => Arc::new(store),
             ObjectStoreImpl::InMemory(store) => Arc::new(store),
-            ObjectStoreImpl::Azrue(store) => Arc::new(store),
+            ObjectStoreImpl::Azure(store) => Arc::new(store),
             ObjectStoreImpl::S3(store) => Arc::new(store),
             ObjectStoreImpl::Gcp(store) => Arc::new(store),
         }
@@ -160,33 +160,50 @@ impl ObjectStoreBuilder {
             ObjectStoreKind::Local => ObjectStoreImpl::Local(LocalFileSystem::new()),
             ObjectStoreKind::InMemory => ObjectStoreImpl::InMemory(InMemory::new()),
             ObjectStoreKind::Azure => {
-                let store = MicrosoftAzureBuilder::new()
-                    .with_url(url.clone())
-                    .try_with_options(&self.options)?
+                let mut store_builder = MicrosoftAzureBuilder::new().with_url(url.clone());
+
+                for (key, value) in self.options.iter() {
+                    store_builder = store_builder.with_config(key.parse()?, value);
+                }
+
+                let store = store_builder
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build()
                     .or_else(|_| {
-                        MicrosoftAzureBuilder::from_env()
-                            .with_url(url.clone())
-                            .try_with_options(&self.options)?
+                        let mut store_builder =
+                            MicrosoftAzureBuilder::from_env().with_url(url.clone());
+
+                        for (key, value) in self.options.iter() {
+                            store_builder = store_builder.with_config(key.parse()?, value);
+                        }
+
+                        store_builder
                             .with_client_options(self.client_options.clone().unwrap_or_default())
                             .with_retry(self.retry_config.clone().unwrap_or_default())
                             .build()
                     })?;
-                ObjectStoreImpl::Azrue(store)
+                ObjectStoreImpl::Azure(store)
             }
             ObjectStoreKind::S3 => {
-                let store = AmazonS3Builder::new()
-                    .with_url(url.clone())
-                    .try_with_options(&self.options)?
+                let mut store_builder = AmazonS3Builder::new().with_url(url.clone());
+
+                for (key, value) in self.options.iter() {
+                    store_builder = store_builder.with_config(key.parse()?, value);
+                }
+
+                let store = store_builder
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build()
                     .or_else(|_| {
-                        AmazonS3Builder::from_env()
-                            .with_url(url.clone())
-                            .try_with_options(&self.options)?
+                        let mut store_builder = AmazonS3Builder::from_env().with_url(url.clone());
+
+                        for (key, value) in self.options.iter() {
+                            store_builder = store_builder.with_config(key.parse()?, value);
+                        }
+
+                        store_builder
                             .with_client_options(self.client_options.unwrap_or_default())
                             .with_retry(self.retry_config.unwrap_or_default())
                             .build()
@@ -194,16 +211,25 @@ impl ObjectStoreBuilder {
                 ObjectStoreImpl::S3(store)
             }
             ObjectStoreKind::Google => {
-                let store = GoogleCloudStorageBuilder::new()
-                    .with_url(url.clone())
-                    .try_with_options(&self.options)?
+                let mut store_builder = GoogleCloudStorageBuilder::new().with_url(url.clone());
+
+                for (key, value) in self.options.iter() {
+                    store_builder = store_builder.with_config(key.parse()?, value);
+                }
+
+                let store = store_builder
                     .with_client_options(self.client_options.clone().unwrap_or_default())
                     .with_retry(self.retry_config.clone().unwrap_or_default())
                     .build()
                     .or_else(|_| {
-                        GoogleCloudStorageBuilder::from_env()
-                            .with_url(url.clone())
-                            .try_with_options(&self.options)?
+                        let mut store_builder =
+                            GoogleCloudStorageBuilder::from_env().with_url(url.clone());
+
+                        for (key, value) in self.options.iter() {
+                            store_builder = store_builder.with_config(key.parse()?, value);
+                        }
+
+                        store_builder
                             .with_client_options(self.client_options.unwrap_or_default())
                             .with_retry(self.retry_config.unwrap_or_default())
                             .build()
