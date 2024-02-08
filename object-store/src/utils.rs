@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use futures::future::{join_all, BoxFuture, FutureExt};
 use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
@@ -10,11 +11,7 @@ pub async fn flatten_list_stream(
     storage: &DynObjectStore,
     prefix: Option<&Path>,
 ) -> ObjectStoreResult<Vec<ObjectMeta>> {
-    storage
-        .list(prefix)
-        .await?
-        .try_collect::<Vec<ObjectMeta>>()
-        .await
+    storage.list(prefix).try_collect::<Vec<ObjectMeta>>().await
 }
 
 pub async fn walk_tree(
@@ -77,7 +74,7 @@ fn list_with_delimiter_recursive(
 
 pub async fn delete_dir(storage: &DynObjectStore, prefix: &Path) -> ObjectStoreResult<()> {
     // TODO batch delete would be really useful now...
-    let mut stream = storage.list(Some(prefix)).await?;
+    let mut stream = storage.list(Some(prefix));
     while let Some(maybe_meta) = stream.next().await {
         let meta = maybe_meta?;
         storage.delete(&meta.location).await?;
@@ -86,6 +83,6 @@ pub async fn delete_dir(storage: &DynObjectStore, prefix: &Path) -> ObjectStoreR
 }
 
 /// get bytes from a location
-pub async fn get_bytes(storage: &DynObjectStore, path: &Path) -> ObjectStoreResult<Vec<u8>> {
-    Ok(storage.get(path).await?.bytes().await?.into())
+pub async fn get_bytes(storage: &DynObjectStore, path: &Path) -> ObjectStoreResult<Bytes> {
+    storage.get(path).await?.bytes().await
 }

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["maturin>=0.14,<0.15", "typing_extensions"]
+requires = ["maturin>=1.4,<1.5", "typing_extensions"]
 build-backend = "maturin"
 
 [project]
@@ -30,7 +30,9 @@ Documentation = "https://github.com/roeap/object-store-python#readme"
 Repository = "https://github.com/roeap/object-store-python"
 
 [tool.maturin]
-bindings = "pyo3"
+features = ["pyo3/extension-module"]
+module-name = "object_store._internal"
+python-source = "python"
 sdist-include = ["Cargo.lock"]
 
 [tool.coverage.report]
