@@ -570,7 +570,7 @@ impl PyObjectStore {
     }
 
     /// Return the bytes that are stored at the specified location in the given byte range
-    #[pyo3(text_signature = "($self, location)")]
+    #[pyo3(text_signature = "($self, location, start, length)")]
     fn get_range_async<'a>(
         &'a self,
         py: Python<'a>,
