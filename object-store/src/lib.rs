@@ -13,13 +13,14 @@ use crate::utils::{flatten_list_stream, get_bytes};
 
 use object_store::path::{Error as PathError, Path};
 use object_store::{
-    BackoffConfig, ClientOptions, DynObjectStore, Error as InnerObjectStoreError, ListResult,
-    ObjectMeta, RetryConfig,
+    BackoffConfig, ClientOptions, DynObjectStore, Error as InnerObjectStoreError, GetOptions,
+    GetRange, ListResult, ObjectMeta, RetryConfig,
 };
 use pyo3::exceptions::{
     PyException, PyFileExistsError, PyFileNotFoundError, PyNotImplementedError,
 };
 use pyo3::prelude::*;
+use pyo3::types::PyType;
 use pyo3::PyErr;
 use tokio::runtime::Runtime;
 
@@ -216,6 +217,67 @@ impl PyListResult {
 impl From<ListResult> for PyListResult {
     fn from(result: ListResult) -> Self {
         Self(result)
+    }
+}
+
+#[pyclass(name = "GetRange")]
+#[derive(Debug, Clone)]
+pub struct PyGetRange {
+    range: GetRange,
+}
+
+#[pymethods]
+impl PyGetRange {
+    #[classmethod]
+    pub fn from_bounded(_cls: &PyType, start: usize, length: usize) -> Self {
+        Self {
+            range: GetRange::Bounded(start..start + length),
+        }
+    }
+
+    #[classmethod]
+    pub fn from_offset(_cls: &PyType, offset: usize) -> Self {
+        Self {
+            range: GetRange::Offset(offset),
+        }
+    }
+
+    #[classmethod]
+    pub fn from_suffix(_cls: &PyType, suffix: usize) -> Self {
+        Self {
+            range: GetRange::Suffix(suffix),
+        }
+    }
+}
+
+#[pyclass(name = "GetOptions")]
+#[derive(Debug, Clone, Default)]
+pub struct PyGetOptions {
+    #[pyo3(get, set)]
+    pub if_match: Option<String>,
+    #[pyo3(get, set)]
+    pub if_none_match: Option<String>,
+    // chrono conversions not supported with abi3 feature
+    // pub if_modified_since: Option<DateTime<Utc>>,
+    // pub if_unmodified_since: Option<DateTime<Utc>>,
+    #[pyo3(get, set)]
+    pub range: Option<PyGetRange>,
+    #[pyo3(get, set)]
+    pub version: Option<String>,
+    #[pyo3(get, set)]
+    pub head: bool,
+}
+
+impl PyGetOptions {
+    fn get_options(&self) -> GetOptions {
+        GetOptions {
+            if_match: self.if_match.clone(),
+            if_none_match: self.if_none_match.clone(),
+            range: self.range.as_ref().map(|py_range| py_range.range.clone()),
+            version: self.version.clone(),
+            head: self.head,
+            ..Default::default()
+        }
     }
 }
 
@@ -555,6 +617,41 @@ impl PyObjectStore {
         })
     }
 
+    /// Return the bytes that are stored at the specified location.
+    #[pyo3(text_signature = "($self, location, options)")]
+    fn get_opts(&self, location: PyPath, options: PyGetOptions) -> PyResult<Cow<[u8]>> {
+        let get_result = self
+            .rt
+            .block_on(self.inner.get_opts(&location.into(), options.get_options()))
+            .map_err(ObjectStoreError::from)?;
+        let obj = self
+            .rt
+            .block_on(get_result.bytes())
+            .map_err(ObjectStoreError::from)?;
+        Ok(Cow::Owned(obj.to_vec()))
+    }
+
+    /// Return the bytes that are stored at the specified location.
+    #[pyo3(text_signature = "($self, location, options)")]
+    fn get_opts_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        location: PyPath,
+        options: PyGetOptions,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let obj = inner
+                .get_opts(&location.into(), options.get_options())
+                .await
+                .map_err(ObjectStoreError::from)?
+                .bytes()
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(Cow::<[u8]>::Owned(obj.to_vec()))
+        })
+    }
+
     /// Return the bytes that are stored at the specified location in the given byte range
     #[pyo3(text_signature = "($self, location, start, length)")]
     fn get_range(&self, location: PyPath, start: usize, length: usize) -> PyResult<Cow<[u8]>> {
@@ -590,6 +687,59 @@ impl PyObjectStore {
                 .await
                 .map_err(ObjectStoreError::from)?;
             Ok(Cow::<[u8]>::Owned(obj.to_vec()))
+        })
+    }
+
+    /// Return the bytes that are stored at the specified location in the given byte ranges
+    #[pyo3(text_signature = "($self, location, ranges)")]
+    fn get_ranges(
+        &self,
+        location: PyPath,
+        ranges: Vec<(usize, usize)>,
+    ) -> PyResult<Vec<Cow<[u8]>>> {
+        let ranges = ranges
+            .into_iter()
+            .map(|(start, length)| std::ops::Range {
+                start,
+                end: start + length,
+            })
+            .collect::<Vec<_>>();
+        let obj = self
+            .rt
+            .block_on(self.inner.get_ranges(&location.into(), &ranges))
+            .map_err(ObjectStoreError::from)?;
+        Ok(obj
+            .into_iter()
+            .map(|bytes| Cow::Owned(bytes.to_vec()))
+            .collect())
+    }
+
+    /// Return the bytes that are stored at the specified location in the given byte ranges
+    #[pyo3(text_signature = "($self, location, ranges)")]
+    fn get_ranges_async<'a>(
+        &'a self,
+        py: Python<'a>,
+        location: PyPath,
+        ranges: Vec<(usize, usize)>,
+    ) -> PyResult<&PyAny> {
+        let inner = self.inner.clone();
+        let ranges = ranges
+            .into_iter()
+            .map(|(start, length)| std::ops::Range {
+                start,
+                end: start + length,
+            })
+            .collect::<Vec<_>>();
+
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let obj = inner
+                .get_ranges(&location.into(), &ranges)
+                .await
+                .map_err(ObjectStoreError::from)?;
+            Ok(obj
+                .into_iter()
+                .map(|bytes| Cow::Owned(bytes.to_vec()))
+                .collect::<Vec<Cow<[u8]>>>())
         })
     }
 

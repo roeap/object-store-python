@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Self, Tuple
 
 if TYPE_CHECKING:
     import pyarrow.fs as fs
@@ -31,6 +31,58 @@ class ListResult:
     @property
     def objects(self) -> list[ObjectMeta]:
         """Object metadata for the listing"""
+
+class GetRange:
+    """Request only a portion of an object's bytes."""
+
+    @classmethod
+    def from_bounded(cls, start: int, length: int) -> Self:
+        """Request a specific range of bytes
+
+        If the given range is zero-length or starts after the end of the object, an
+        error will be returned. Additionally, if the range ends after the end of the
+        object, the entire remainder of the object will be returned. Otherwise, the
+        exact requested range will be returned.
+        """
+    @classmethod
+    def from_offset(cls, offset: int) -> Self:
+        """Request all bytes starting from a given byte offset."""
+    @classmethod
+    def from_suffix(cls, suffix: int) -> Self:
+        """Request up to the last n bytes."""
+
+class GetOptions:
+    """Options for a get request, such as range."""
+
+    @property
+    def if_match(self) -> str | None:
+        """
+        Request will succeed if the ObjectMeta::e_tag matches otherwise returning Error::Precondition
+
+        See https://datatracker.ietf.org/doc/html/rfc9110#name-if-match
+        """
+    @property
+    def if_none_match(self) -> str | None:
+        """
+        Request will succeed if the ObjectMeta::e_tag does not match otherwise returning Error::NotModified
+
+        See https://datatracker.ietf.org/doc/html/rfc9110#section-13.1.2
+        """
+    @property
+    def range(self) -> GetRange | None:
+        """Request transfer of only the specified range of bytes otherwise returning Error::NotModified
+
+        https://datatracker.ietf.org/doc/html/rfc9110#name-range
+        """
+    @property
+    def version(self) -> str | None:
+        """Request a particular object version."""
+    @property
+    def head(self) -> bool:
+        """Request transfer of no content
+
+        https://datatracker.ietf.org/doc/html/rfc9110#name-head
+        """
 
 class ClientOptions:
     """HTTP client configuration for remote object stores"""
@@ -133,9 +185,17 @@ class ObjectStore:
         """Return the bytes that are stored at the specified location."""
     async def get_async(self, location: Path) -> bytes:
         """Return the bytes that are stored at the specified location."""
+    def get_opts(self, location: Path, options: GetOptions) -> bytes:
+        """Return the bytes that are stored at the specified location."""
+    async def get_opts_async(self, location: Path, options: GetOptions) -> bytes:
+        """Return the bytes that are stored at the specified location."""
     def get_range(self, location: Path, start: int, length: int) -> bytes:
         """Return the bytes that are stored at the specified location in the given byte range."""
     async def get_range_async(self, location: Path, start: int, length: int) -> bytes:
+        """Return the bytes that are stored at the specified location in the given byte range."""
+    def get_ranges(self, location: Path, ranges: List[Tuple[int, int]]) -> bytes:
+        """Return the bytes that are stored at the specified location in the given byte range."""
+    async def get_ranges_async(self, location: Path, ranges: List[Tuple[int, int]]) -> bytes:
         """Return the bytes that are stored at the specified location in the given byte range."""
     def put(self, location: Path, bytes: bytes) -> None:
         """Save the provided bytes to the specified location."""
