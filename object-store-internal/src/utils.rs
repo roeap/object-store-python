@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use futures::future::{join_all, BoxFuture, FutureExt};
 use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
@@ -82,6 +83,6 @@ pub async fn delete_dir(storage: &DynObjectStore, prefix: &Path) -> ObjectStoreR
 }
 
 /// get bytes from a location
-pub async fn get_bytes(storage: &DynObjectStore, path: &Path) -> ObjectStoreResult<Vec<u8>> {
-    Ok(storage.get(path).await?.bytes().await?.into())
+pub async fn get_bytes(storage: &DynObjectStore, path: &Path) -> ObjectStoreResult<Bytes> {
+    storage.get(path).await?.bytes().await
 }

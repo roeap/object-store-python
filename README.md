@@ -41,26 +41,53 @@ implementation, with some slight adjustments for ease of use in python programs.
 ### `ObjectStore` api
 
 ```py
-from object_store import ObjectStore, ObjectMeta
+from object_store import ObjectStore, ObjectMeta, Path
 
 # we use an in-memory store for demonstration purposes.
 # data will not be persisted and is not shared across store instances
 store = ObjectStore("memory://")
 
-store.put("data", b"some data")
+store.put(Path("data"), b"some data")
 
 data = store.get("data")
 assert data == b"some data"
 
 blobs = store.list()
 
-meta: ObjectMeta = store.head("data")
+meta = store.head("data")
 
 range = store.get_range("data", start=0, length=4)
 assert range == b"some"
 
 store.copy("data", "copied")
 copied = store.get("copied")
+assert copied == data
+```
+
+#### Async api
+
+```py
+from object_store import ObjectStore, ObjectMeta, Path
+
+# we use an in-memory store for demonstration purposes.
+# data will not be persisted and is not shared across store instances
+store = ObjectStore("memory://")
+
+path = Path("data")
+await store.put_async(path, b"some data")
+
+data = await store.get_async(path)
+assert data == b"some data"
+
+blobs = await store.list_async()
+
+meta = await store.head_async(path)
+
+range = await store.get_range_async(path, start=0, length=4)
+assert range == b"some"
+
+await store.copy_async(Path("data"), Path("copied"))
+copied = await store.get_async(Path("copied"))
 assert copied == data
 ```
 
