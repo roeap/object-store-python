@@ -1,3 +1,3 @@
 ::: object_store.ObjectStore
 
-::: object_store.ArrowFileSystemHandler
+::: object_store.arrow.ArrowFileSystemHandler

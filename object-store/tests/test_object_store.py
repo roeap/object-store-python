@@ -54,7 +54,7 @@ def test_put_get_delete_list(object_store: tuple[ObjectStore, Path]):
     range_result = store.get_range(location, 3, 4)
     assert range_result == expected_data[3:7]
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         store.get_range(location, 200, 100)
 
     head = store.head(location)
