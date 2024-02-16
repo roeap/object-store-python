@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["object-store"]
+members = ["object-store", "object-store-internal"]
