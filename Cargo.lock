@@ -1027,7 +1027,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "object-store-python"
+name = "object-store-internal"
 version = "0.1.10"
 dependencies = [
  "async-trait",
@@ -1041,6 +1041,14 @@ dependencies = [
  "thiserror",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "object-store-python"
+version = "0.1.10"
+dependencies = [
+ "object-store-internal",
+ "pyo3",
 ]
 
 [[package]]
