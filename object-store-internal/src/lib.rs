@@ -8,7 +8,7 @@ use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
+pub use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
 use crate::utils::{flatten_list_stream, get_bytes};
 
 use object_store::path::{Error as PathError, Path};
@@ -100,7 +100,7 @@ impl From<ObjectStoreError> for PyErr {
 
 #[pyclass(name = "Path", subclass)]
 #[derive(Clone)]
-struct PyPath(Path);
+pub struct PyPath(Path);
 
 impl From<PyPath> for Path {
     fn from(path: PyPath) -> Self {
@@ -143,7 +143,7 @@ impl PyPath {
 
 #[pyclass(name = "ObjectMeta", subclass)]
 #[derive(Clone)]
-struct PyObjectMeta(ObjectMeta);
+pub struct PyObjectMeta(ObjectMeta);
 
 impl From<ObjectMeta> for PyObjectMeta {
     fn from(meta: ObjectMeta) -> Self {
@@ -188,7 +188,7 @@ impl PyObjectMeta {
 }
 
 #[pyclass(name = "ListResult", subclass)]
-struct PyListResult(ListResult);
+pub struct PyListResult(ListResult);
 
 #[pymethods]
 impl PyListResult {
@@ -473,7 +473,7 @@ impl PyClientOptions {
 #[derive(Debug, Clone)]
 /// A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage,
 /// Azure Blob Storage and local files.
-struct PyObjectStore {
+pub struct PyObjectStore {
     inner: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
     root_url: String,
