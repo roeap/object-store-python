@@ -32,6 +32,28 @@ class ListResult:
     def objects(self) -> list[ObjectMeta]:
         """Object metadata for the listing"""
 
+class PutResult:
+    """TODO..."""
+
+    # @property
+    # def common_prefixes(self) -> list[Path]:
+    #     """Prefixes that are common (like directories)"""
+    # @property
+    # def objects(self) -> list[ObjectMeta]:
+    #     """Object metadata for the listing"""
+    pass
+
+class MultipartUpload:
+    """TODO..."""
+
+    # @property
+    # def common_prefixes(self) -> list[Path]:
+    #     """Prefixes that are common (like directories)"""
+    # @property
+    # def objects(self) -> list[ObjectMeta]:
+    #     """Object metadata for the listing"""
+    pass
+
 class ClientOptions:
     """HTTP client configuration for remote object stores"""
 
@@ -133,8 +155,12 @@ class ObjectStore:
         """Return the bytes that are stored at the specified location."""
     def get_range(self, location: Path, start: int, length: int) -> bytes:
         """Return the bytes that are stored at the specified location in the given byte range."""
-    def put(self, location: Path, bytes: bytes) -> None:
+    def put(self, location: Path, bytes: bytes) -> PutResult:
         """Save the provided bytes to the specified location."""
+    def put_opts(self, location: Path, bytes: bytes) -> PutResult:
+        """Save the provided bytes to the specified location with the given options"""
+    def put_multipart(self, location: Path) -> MultipartUpload:
+        """Perform a multipart upload"""
     def list(self, prefix: Path | None) -> list[ObjectMeta]:
         """List all the objects with the given prefix.
 
