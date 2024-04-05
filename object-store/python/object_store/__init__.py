@@ -5,6 +5,8 @@ from typing import List, Optional, Union
 # of static code checkers. Thus we avoid listing them with __all__ = ...
 from ._internal import ClientOptions as ClientOptions
 from ._internal import ListResult as ListResult
+from ._internal import PutResult as PutResult
+from ._internal import MultipartUpload as MultipartUpload
 from ._internal import ObjectMeta as ObjectMeta
 from ._internal import ObjectStore as _ObjectStore
 from ._internal import Path as Path
@@ -80,7 +82,7 @@ class ObjectStore(_ObjectStore):
         """
         return super().get_range(_as_path(location), start, length)
 
-    def put(self, location: PathLike, bytes: BytesLike) -> None:
+    def put(self, location: PathLike, bytes: BytesLike) -> PutResult:
         """Save the provided bytes to the specified location.
 
         Args:
@@ -88,6 +90,23 @@ class ObjectStore(_ObjectStore):
             bytes (BytesLike): data to be written to location
         """
         return super().put(_as_path(location), _as_bytes(bytes))
+
+    def put_opts(self, location: PathLike, bytes: BytesLike) -> PutResult:
+        """Save the provided bytes to the specified location with the given options
+
+        Args:
+            location (PathLike): path / key to storage location
+            bytes (BytesLike): data to be written to location
+        """
+        return super().put_opts(_as_path(location), _as_bytes(bytes))
+
+    def put_multipart(self, location: PathLike) -> MultipartUpload:
+        """Perform a multipart upload
+
+        Args:
+            location (PathLike): path / key to storage location
+        """
+        return super().put_multipart(_as_path(location))
 
     def delete(self, location: PathLike) -> None:
         """Delete the object at the specified location.
