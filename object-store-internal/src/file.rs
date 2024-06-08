@@ -6,11 +6,10 @@ use crate::utils::{delete_dir, walk_tree};
 use crate::{ObjectStoreError, PyClientOptions};
 
 use object_store::path::Path;
-use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, MultipartId};
+use object_store::{DynObjectStore, Error as InnerObjectStoreError, ListResult, MultipartUpload};
 use pyo3::exceptions::{PyNotImplementedError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyBytes};
-use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::runtime::Runtime;
 
 #[pyclass(subclass, weakref)]
@@ -442,11 +441,10 @@ impl ObjectInputFile {
 // TODO add buffer to store data ...
 #[pyclass(weakref)]
 pub struct ObjectOutputStream {
-    store: Arc<DynObjectStore>,
+    pub store: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
-    path: Path,
-    writer: Box<dyn AsyncWrite + Send + Unpin>,
-    multipart_id: MultipartId,
+    pub path: Path,
+    writer: Box<dyn MultipartUpload>,
     pos: i64,
     #[pyo3(get)]
     closed: bool,
@@ -460,17 +458,18 @@ impl ObjectOutputStream {
         store: Arc<DynObjectStore>,
         path: Path,
     ) -> Result<Self, ObjectStoreError> {
-        let (multipart_id, writer) = store.put_multipart(&path).await.unwrap();
-        Ok(Self {
-            store,
-            rt,
-            path,
-            writer,
-            multipart_id,
-            pos: 0,
-            closed: false,
-            mode: "wb".into(),
-        })
+        match store.put_multipart(&path).await {
+            Ok(writer) => Ok(Self {
+                store,
+                rt,
+                path,
+                writer,
+                pos: 0,
+                closed: false,
+                mode: "wb".into(),
+            }),
+            Err(err) => Err(ObjectStoreError::ObjectStore(err)),
+        }
     }
 
     fn check_closed(&self) -> Result<(), ObjectStoreError> {
@@ -488,11 +487,11 @@ impl ObjectOutputStream {
 impl ObjectOutputStream {
     fn close(&mut self) -> PyResult<()> {
         self.closed = true;
-        match self.rt.block_on(self.writer.shutdown()) {
+        match self.rt.block_on(self.writer.complete()) {
             Ok(_) => Ok(()),
             Err(err) => {
                 self.rt
-                    .block_on(self.store.abort_multipart(&self.path, &self.multipart_id))
+                    .block_on(self.writer.abort())
                     .map_err(ObjectStoreError::from)?;
                 Err(ObjectStoreError::from(err).into())
             }
@@ -537,12 +536,13 @@ impl ObjectOutputStream {
 
     fn write(&mut self, data: &PyBytes) -> PyResult<i64> {
         self.check_closed()?;
-        let len = data.as_bytes().len() as i64;
-        match self.rt.block_on(self.writer.write_all(data.as_bytes())) {
+        let bytes = data.as_bytes().to_vec();
+        let len = bytes.len() as i64;
+        match self.rt.block_on(self.writer.put_part(bytes.into())) {
             Ok(_) => Ok(len),
             Err(err) => {
                 self.rt
-                    .block_on(self.store.abort_multipart(&self.path, &self.multipart_id))
+                    .block_on(self.writer.abort())
                     .map_err(ObjectStoreError::from)?;
                 Err(ObjectStoreError::from(err).into())
             }
@@ -550,11 +550,11 @@ impl ObjectOutputStream {
     }
 
     fn flush(&mut self) -> PyResult<()> {
-        match self.rt.block_on(self.writer.flush()) {
+        match self.rt.block_on(self.writer.complete()) {
             Ok(_) => Ok(()),
             Err(err) => {
                 self.rt
-                    .block_on(self.store.abort_multipart(&self.path, &self.multipart_id))
+                    .block_on(self.writer.abort())
                     .map_err(ObjectStoreError::from)?;
                 Err(ObjectStoreError::from(err).into())
             }
