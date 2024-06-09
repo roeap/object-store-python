@@ -474,7 +474,7 @@ impl PyClientOptions {
 /// A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage,
 /// Azure Blob Storage and local files.
 pub struct PyObjectStore {
-    inner: Arc<DynObjectStore>,
+    pub inner: Arc<DynObjectStore>,
     rt: Arc<Runtime>,
     root_url: String,
     options: Option<HashMap<String, String>>,
