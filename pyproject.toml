@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "object-stores"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python bindings and integrations for the rust object_store crate."
 authors = ["Robert Pack <robstar.pack@gmail.com>"]
 license = "MIT"
