@@ -404,7 +404,7 @@ impl ObjectInputFile {
     }
 
     #[pyo3(signature = (nbytes = None))]
-    fn read(&mut self, nbytes: Option<i64>) -> PyResult<Py<PyBytes>> {
+    fn read(&mut self, nbytes: Option<i64>) -> PyResult<Py<PyAny>> {
         self.check_closed()?;
         let range = match nbytes {
             Some(len) => {
@@ -428,7 +428,7 @@ impl ObjectInputFile {
         } else {
             "".into()
         };
-        Python::with_gil(|py| Ok(PyBytes::new(py, data.as_ref()).into_py(py)))
+        Python::with_gil(|py| Ok(PyBytes::new_bound(py, data.as_ref()).into_py(py)))
     }
 
     fn fileno(&self) -> PyResult<()> {
