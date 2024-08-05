@@ -736,7 +736,7 @@ dependencies = [
 
 [[package]]
 name = "object-store-internal"
-version = "0.1.10"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -754,7 +754,7 @@ dependencies = [
 
 [[package]]
 name = "object-store-python"
-version = "0.1.10"
+version = "0.2.0"
 dependencies = [
  "object-store-internal",
  "pyo3",
