@@ -2,7 +2,7 @@ default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [commit, push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: check-case-conflict
       - id: check-merge-conflict
@@ -11,30 +11,30 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v2.39.1
+    rev: v3.28.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.2.1"
+    rev: "v0.5.6"
     hooks:
       - id: ruff
         args: ["--config", "pyproject.toml"]
 
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 24.8.0
     hooks:
       - id: black
         args: ["--config", "pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.4
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
         exclude: setup.py
@@ -43,12 +43,12 @@ repos:
           - python
 
   - repo: https://github.com/python-poetry/poetry
-    rev: "1.3.0"
+    rev: "1.8.0"
     hooks:
       - id: poetry-check
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.290
+    rev: v1.1.374
     hooks:
       - id: pyright
 
