@@ -89,12 +89,20 @@ impl ArrowFileSystemHandler {
         Ok(format!("{:?}", self) == format!("{:?}", other))
     }
 
-    fn get_file_info<'py>(&self, paths: Vec<String>, py: Python<'py>) -> PyResult<Vec<&'py PyAny>> {
-        let fs = PyModule::import(py, "pyarrow.fs")?;
+    fn get_file_info<'py>(
+        &self,
+        paths: Vec<String>,
+        py: Python<'py>,
+    ) -> PyResult<Vec<Bound<'py, pyo3::PyAny>>> {
+        let fs = PyModule::import_bound(py, "pyarrow.fs")?;
         let file_types = fs.getattr("FileType")?;
 
-        let to_file_info = |loc: String, type_: &PyAny, kwargs: HashMap<&str, i64>| {
-            fs.call_method("FileInfo", (loc, type_), Some(kwargs.into_py_dict(py)))
+        let to_file_info = |loc: String, type_: Bound<'_, PyAny>, kwargs: HashMap<&str, i64>| {
+            fs.call_method(
+                "FileInfo",
+                (loc, type_),
+                Some(&kwargs.into_py_dict_bound(py)),
+            )
         };
 
         let mut infos = Vec::new();
@@ -153,13 +161,18 @@ impl ArrowFileSystemHandler {
         allow_not_found: bool,
         recursive: bool,
         py: Python<'py>,
-    ) -> PyResult<Vec<&'py PyAny>> {
-        let fs = PyModule::import(py, "pyarrow.fs")?;
+    ) -> PyResult<Vec<Bound<'py, pyo3::PyAny>>> {
+        let fs = PyModule::import_bound(py, "pyarrow.fs")?;
         let file_types = fs.getattr("FileType")?;
 
-        let to_file_info = |loc: String, type_: &PyAny, kwargs: HashMap<&str, i64>| {
-            fs.call_method("FileInfo", (loc, type_), Some(kwargs.into_py_dict(py)))
-        };
+        let to_file_info =
+            |loc: String, type_: Bound<'_, pyo3::PyAny>, kwargs: HashMap<&str, i64>| {
+                fs.call_method(
+                    "FileInfo",
+                    (loc, type_),
+                    Some(&kwargs.into_py_dict_bound(py)),
+                )
+            };
 
         let path = Path::from(base_dir);
         let list_result = match self
@@ -534,7 +547,7 @@ impl ObjectOutputStream {
         Err(PyNotImplementedError::new_err("'read' not implemented"))
     }
 
-    fn write(&mut self, data: &PyBytes) -> PyResult<i64> {
+    fn write(&mut self, data: Bound<'_, PyBytes>) -> PyResult<i64> {
         self.check_closed()?;
         let bytes = data.as_bytes().to_vec();
         let len = bytes.len() as i64;

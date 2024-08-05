@@ -5,7 +5,7 @@ use object_store_internal::{
 use pyo3::prelude::*;
 
 #[pymodule]
-fn _internal(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _internal(_py: Python, m: Bound<'_, PyModule>) -> PyResult<()> {
     // Register the python classes
     m.add_class::<PyClientOptions>()?;
     m.add_class::<PyObjectStore>()?;
