@@ -61,3 +61,5 @@ __blobstorage__
 examples/data
 !examples/data/.gitkeep
 .venv/
+
+*.github-issues
