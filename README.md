@@ -47,7 +47,7 @@ from object_store import ObjectStore, ObjectMeta, Path
 # data will not be persisted and is not shared across store instances
 store = ObjectStore("memory://")
 
-store.put(Path("data"), b"some data")
+store.put("data", b"some data")
 
 data = store.get("data")
 assert data == b"some data"
@@ -67,13 +67,13 @@ assert copied == data
 #### Async api
 
 ```py
-from object_store import ObjectStore, ObjectMeta, Path
+from object_store import ObjectStore, ObjectMeta
 
 # we use an in-memory store for demonstration purposes.
 # data will not be persisted and is not shared across store instances
 store = ObjectStore("memory://")
 
-path = Path("data")
+path = "data"
 await store.put_async(path, b"some data")
 
 data = await store.get_async(path)
@@ -86,8 +86,8 @@ meta = await store.head_async(path)
 range = await store.get_range_async(path, start=0, length=4)
 assert range == b"some"
 
-await store.copy_async(Path("data"), Path("copied"))
-copied = await store.get_async(Path("copied"))
+await store.copy_async("data", "copied")
+copied = await store.get_async("copied")
 assert copied == data
 ```
 

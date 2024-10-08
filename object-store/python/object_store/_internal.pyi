@@ -139,6 +139,13 @@ class ClientOptions:
     def http2_only(self) -> bool:
         """Only use http2 connections"""
 
+class BytesStream:
+    def __aiter__(self) -> BytesStream:
+        """Return `Self` as an async iterator."""
+
+    async def __anext__(self) -> bytes:
+        """Return the next chunk of bytes in the stream."""
+
 class ObjectStore:
     """A uniform API for interacting with object storage services and local files."""
 
@@ -156,6 +163,9 @@ class ObjectStore:
 
     async def get_range_async(self, location: Path, start: int, length: int) -> bytes:
         """Return the bytes that are stored at the specified location in the given byte range."""
+
+    def stream(self, location: Path) -> BytesStream:
+        """Return a chunked stream over the bytes that are stored at the specified location."""
 
     def put(self, location: Path, bytes: bytes) -> None:
         """Save the provided bytes to the specified location."""

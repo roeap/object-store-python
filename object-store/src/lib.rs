@@ -1,6 +1,6 @@
 use object_store_internal::{
-    ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream, PyClientOptions, PyListResult,
-    PyObjectMeta, PyObjectStore, PyPath,
+    ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream, PyBytesStream, PyClientOptions,
+    PyListResult, PyObjectMeta, PyObjectStore, PyPath,
 };
 use pyo3::prelude::*;
 
@@ -15,6 +15,7 @@ fn _internal(_py: Python, m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ArrowFileSystemHandler>()?;
     m.add_class::<ObjectInputFile>()?;
     m.add_class::<ObjectOutputStream>()?;
+    m.add_class::<PyBytesStream>()?;
 
     Ok(())
 }

@@ -2,12 +2,16 @@ mod builder;
 mod file;
 mod utils;
 
+use bytes::Bytes;
+use futures::stream::BoxStream;
+use futures::StreamExt;
 use pyo3_asyncio_0_21 as pyo3_asyncio;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 pub use crate::file::{ArrowFileSystemHandler, ObjectInputFile, ObjectOutputStream};
 use crate::utils::{flatten_list_stream, get_bytes};
@@ -19,6 +23,7 @@ use object_store::{
 };
 use pyo3::exceptions::{
     PyException, PyFileExistsError, PyFileNotFoundError, PyNotImplementedError,
+    PyStopAsyncIteration,
 };
 use pyo3::prelude::*;
 use pyo3::PyErr;
@@ -470,6 +475,38 @@ impl PyClientOptions {
     }
 }
 
+#[pyclass(name = "BytesStream")]
+pub struct PyBytesStream {
+    stream: Arc<Mutex<BoxStream<'static, object_store::Result<Bytes>>>>,
+}
+
+impl PyBytesStream {
+    fn new(stream: BoxStream<'static, object_store::Result<Bytes>>) -> Self {
+        Self {
+            stream: Arc::new(Mutex::new(stream)),
+        }
+    }
+}
+
+#[pymethods]
+impl PyBytesStream {
+    fn __aiter__(_self: Py<Self>) -> Py<Self> {
+        _self
+    }
+
+    fn __anext__(&self, py: Python) -> PyResult<Option<PyObject>> {
+        let stream = self.stream.clone();
+        let fut = pyo3_asyncio::tokio::future_into_py(py, async move {
+            match stream.lock().await.next().await {
+                Some(Ok(bytes)) => Ok(Cow::<[u8]>::Owned(bytes.to_vec())),
+                Some(Err(e)) => Err(ObjectStoreError::from(e).into()),
+                None => Err(PyStopAsyncIteration::new_err("stream exhausted")),
+            }
+        })?;
+        Ok(Some(fut.into()))
+    }
+}
+
 #[pyclass(name = "ObjectStore", subclass)]
 #[derive(Debug, Clone)]
 /// A generic object store interface for uniformly interacting with AWS S3, Google Cloud Storage,
@@ -605,6 +642,18 @@ impl PyObjectStore {
                 .await
                 .map_err(ObjectStoreError::from)?;
             Ok(Cow::<[u8]>::Owned(obj.to_vec()))
+        })
+    }
+
+    #[pyo3(text_signature = "($self, location)")]
+    fn stream(&self, py: Python, location: PyPath) -> PyResult<PyBytesStream> {
+        py.allow_threads(|| {
+            let stream = self
+                .rt
+                .block_on(self.inner.get(&location.into()))
+                .map_err(ObjectStoreError::from)?
+                .into_stream();
+            Ok(PyBytesStream::new(stream))
         })
     }
 
